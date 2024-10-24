@@ -1,0 +1,18 @@
+TableName: "VehicleDB"
+KeySchema:
+  - AttributeName: "PK"
+    KeyType: "HASH"
+  - AttributeName: "SK"
+    KeyType: "RANGE"
+GlobalSecondaryIndexes:
+  - IndexName: "GSI1"
+    KeySchema:
+      - AttributeName: "GSI1SK"
+        KeyType: "HASH"
+      - AttributeName: "GSI1PK"
+        KeyType: "RANGE"
+    Projection:
+      ProjectionType: "KEYS_ONLY"
+ProvisionedThroughput:
+  ReadCapacityUnites: 1
+  WrigeCapacityUnits: 1
