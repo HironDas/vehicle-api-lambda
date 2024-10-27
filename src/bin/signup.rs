@@ -1,6 +1,6 @@
 use aws_sdk_dynamodb::config::BehaviorVersion;
-use lambda_http::{tracing, Error, run, service_fn, Request, Response, Body, RequestExt};
-use vehicle_management_lambda::{self, model::user::User, DataAccess, DBDataAccess};
+use lambda_http::{run, service_fn, tracing, Body, Error, Request, RequestExt, Response};
+use vehicle_management_lambda::{self, model::user::User, DBDataAccess, DataAccess};
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -14,14 +14,15 @@ async fn main() -> Result<(), Error> {
         .init();
 
     let table_name = std::env::var("TABLE_NAME").unwrap_or("VEHICLEDB".to_string());
-    let aws_config = aws_config::defaults(BehaviorVersion::v2024_03_28()).load().await;
+    let aws_config = aws_config::defaults(BehaviorVersion::v2024_03_28())
+        .load()
+        .await;
     let client = aws_sdk_dynamodb::Client::new(&aws_config);
 
     let data_access = DBDataAccess::new(client, table_name);
 
-    run(service_fn(|req|signup(&data_access, req))).await
+    run(service_fn(|req| signup(&data_access, req))).await
 }
-
 
 #[tracing::instrument(skip(data_access), fields(request_id = %req.lambda_context().request_id))]
 async fn signup<T: DataAccess>(data_access: &T, req: Request) -> Result<Response<Body>, Error> {
