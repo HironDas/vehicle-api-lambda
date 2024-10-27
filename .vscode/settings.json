@@ -6,6 +6,13 @@
             "tableName": "VehicleDB",
             "awsProfile": "default",
             "region": "ap-south-1"
+        },
+        {
+            "type": "dynamodb",
+            "title": "SessionStore",
+            "tableName": "SessionStore",
+            "awsProfile": "default",
+            "region": "ap-south-1"
         }
     ]
 }
