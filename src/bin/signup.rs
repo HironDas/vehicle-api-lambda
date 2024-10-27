@@ -1,5 +1,6 @@
 use aws_sdk_dynamodb::config::BehaviorVersion;
 use lambda_http::{run, service_fn, tracing, Body, Error, Request, RequestExt, Response};
+use serde_json::json;
 use vehicle_management_lambda::{self, model::user::User, DBDataAccess, DataAccess};
 
 #[tokio::main]
@@ -13,7 +14,7 @@ async fn main() -> Result<(), Error> {
         .without_time()
         .init();
 
-    let table_name = std::env::var("TABLE_NAME").unwrap_or("VEHICLEDB".to_string());
+    let table_name = std::env::var("TABLE_NAME").unwrap_or("VehicleDB".to_string());
     let aws_config = aws_config::defaults(BehaviorVersion::v2024_03_28())
         .load()
         .await;
@@ -55,14 +56,14 @@ async fn signup<T: DataAccess>(data_access: &T, req: Request) -> Result<Response
         .await
         .and_then(|_| {
             Ok(Response::builder()
-                .status(200)
+                .status(201)
                 .body("{'message':'Signup successful!!'}".into())
                 .unwrap())
         })
         .or_else(|err| {
             Ok(Response::builder()
                 .status(400)
-                .body(err.to_string().into())
+                .body(format!("{{\"message\": {} }}", err.to_string()).into())
                 .unwrap())
         })
 }

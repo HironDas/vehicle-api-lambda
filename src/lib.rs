@@ -29,6 +29,8 @@ impl DBDataAccess {
 #[async_trait]
 impl DataAccess for DBDataAccess {
     async fn create_user(&self, user: User) -> Result<(), Error> {
+        tracing::warn!("User:====>{:#?}", user);
+        tracing::info!("Table Name: {}", &self.table_name);
         self.client
             .put_item()
             .table_name(&self.table_name)
