@@ -52,10 +52,10 @@ impl User {
         ]);
 
         if let Some(number) = &self.phone {
-           println!("{}", number);
-           userMap.insert(
-            "phone".to_string(),
-            aws_sdk_dynamodb::types::AttributeValue::S(number.to_owned()),
+            println!("{}", number);
+            userMap.insert(
+                "phone".to_string(),
+                aws_sdk_dynamodb::types::AttributeValue::S(number.to_owned()),
             );
         }
 
