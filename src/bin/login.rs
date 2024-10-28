@@ -1,6 +1,5 @@
-
 use aws_config::BehaviorVersion;
-use lambda_http::{run, service_fn, Body, Error, Request, RequestExt, tracing,Response};
+use lambda_http::{run, service_fn, tracing, Body, Error, Request, RequestExt, Response};
 use vehicle_management_lambda::{model::user::User, DBDataAccess, DataAccess};
 
 #[tokio::main]
@@ -11,7 +10,7 @@ async fn main() -> Result<(), Error> {
         .with_target(false)
         .init();
 
-    let table_name: String = std::env::var("TABLE_NAME").unwrap_or("SessionStore".to_string());
+    let table_name: String = std::env::var("TABLE_NAME").unwrap_or("VehicleDB".to_string());
     let sdk_config = aws_config::defaults(BehaviorVersion::latest())
         // .endpoint_url("http://localhos:8000")
         .load()

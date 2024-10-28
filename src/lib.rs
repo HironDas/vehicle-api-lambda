@@ -1,10 +1,13 @@
 use async_trait::async_trait;
-use aws_sdk_dynamodb::Client;
+use aws_sdk_dynamodb::{types::AttributeValue, Client};
 use lambda_http::{
-    tracing::{self, subscriber::registry::Data},
+    tracing::{self},
     Error,
 };
-use model::{session::Session, user::{from_item, user_key, User}};
+use model::{
+    session::{session_key, Session},
+    user::{from_item, user_key, User},
+};
 
 pub mod model;
 
@@ -79,6 +82,32 @@ impl DBDataAccess {
             None => false,
         }
     }
+
+    async fn get_user(&self, token: &str) -> Option<AttributeValue> {
+        let user = self
+            .client
+            .query()
+            .table_name(&self.table_name)
+            .index_name("GSI1")
+            .key_condition_expression("#session_id = :token")
+            .expression_attribute_names("#session_id", "GSI1PK")
+            .expression_attribute_values(":token", session_key(token))
+            .send()
+            .await
+            .unwrap()
+            .items?
+            .iter()
+            .next()
+            .map(|user| user.get("GSI1SK").unwrap().to_owned());
+
+        tracing::info!("USER: {:#?}", user);
+
+        user
+    }
+
+    async fn is_session_vaild(&self, token: &str) -> bool {
+        self.get_user(token).await.is_some()
+    }
 }
 
 #[async_trait]
@@ -114,7 +143,49 @@ impl DataAccess for DBDataAccess {
         }
     }
 
-    async fn delete_session(&self, token: &str) -> Result<(), Error> {
-        todo!()
+    async fn delete_session(&self, session_id: &str) -> Result<(), Error> {
+        let user = self
+            .get_user(session_id)
+            .await
+            .ok_or(0)
+            .map_err(|_| "Session not found")?;
+
+        let sessions = self
+            .client
+            .query()
+            .table_name(&self.table_name)
+            .key_condition_expression("#username = :username and begins_with(#session_id, :token)")
+            .expression_attribute_names("#username", "PK")
+            .expression_attribute_names("#session_id", "SK")
+            .expression_attribute_values(":username", user.clone())
+            .expression_attribute_values(":token", AttributeValue::S("SESSION#".to_string()))
+            .send()
+            .await
+            .unwrap()
+            .items
+            .unwrap()
+            .into_iter()
+            .map(|item| item.get("SK").unwrap().to_owned())
+            .collect::<Vec<AttributeValue>>();
+
+        for session in sessions {
+            self.client
+                .delete_item()
+                .table_name(&self.table_name)
+                .key("PK", user.clone())
+                .key("SK", session)
+                .send()
+                .await
+                .and_then(|output| {
+                    tracing::info!("Item Output: {:#?}", output);
+                    Ok(())
+                })
+                .or_else(|err| {
+                    tracing::error!("{:#?}", err);
+                    Err::<(), Error>(err.into())
+                })?;
+        }
+
+        Ok(())
     }
 }
