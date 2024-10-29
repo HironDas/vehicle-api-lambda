@@ -33,7 +33,7 @@ async fn delete_session<T: DataAccess>(
     if token.is_none() {
         return Ok(Response::builder()
             .status(401)
-            .body("Unauthorized".into())
+            .body("{\"message\": \"Unauthorized\"}".into())
             .unwrap());
     }
 
@@ -43,17 +43,17 @@ async fn delete_session<T: DataAccess>(
     data_access
         .delete_session(token)
         .await
-        .and_then(|_| {
+        .and_then(|usr| {
             return Ok(Response::builder()
                 .status(200)
-                .body("{\"message\": \"All Sessions of the user is deleted\"}".into())
+                .body(format!("{{\"message\": \"All Sessions of the user {} is deleted\"}}", usr).into())
                 .unwrap());
         })
         .or_else(|err| {
             tracing::error!("ERROR: {:#?}", err);
             Ok(Response::builder()
-                .status(500)
-                .body("{\"message\":\"Something Went Wrong!!\"}".into())
+                .status(403)
+                .body(format!("{{\"message\": \"{}\"}}", err).into())
                 // .body(err.to_string().into())
                 .unwrap())
         })

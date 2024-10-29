@@ -32,7 +32,7 @@ impl User {
         let hash_password = bcrypt::hash(&self.password).unwrap();
         let date = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
 
-        let mut userMap = HashMap::from([
+        let mut user_map = HashMap::from([
             (
                 "PK".to_string(),
                 aws_sdk_dynamodb::types::AttributeValue::S(["USER#", &self.username].join("")),
@@ -53,13 +53,13 @@ impl User {
 
         if let Some(number) = &self.phone {
             println!("{}", number);
-            userMap.insert(
+            user_map.insert(
                 "phone".to_string(),
                 aws_sdk_dynamodb::types::AttributeValue::S(number.to_owned()),
             );
         }
 
-        userMap
+        user_map
     }
 }
 

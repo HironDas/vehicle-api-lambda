@@ -63,7 +63,7 @@ async fn signup<T: DataAccess>(data_access: &T, req: Request) -> Result<Response
         .or_else(|err| {
             Ok(Response::builder()
                 .status(400)
-                .body(format!("{{\"message\": {} }}", err.to_string()).into())
+                .body(format!("{{\"message\": \"{}\" }}", err.to_string()).into())
                 .unwrap())
         })
 }

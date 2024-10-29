@@ -15,7 +15,7 @@ pub mod model;
 pub trait DataAccess {
     async fn create_user(&self, user: User) -> Result<(), Error>;
     async fn get_session(&self, user: User) -> Result<Session, Error>;
-    async fn delete_session(&self, token: &str) -> Result<(), Error>;
+    async fn delete_session(&self, token: &str) -> Result<String, Error>;
 }
 
 pub struct DBDataAccess {
@@ -143,12 +143,12 @@ impl DataAccess for DBDataAccess {
         }
     }
 
-    async fn delete_session(&self, session_id: &str) -> Result<(), Error> {
+    async fn delete_session(&self, session_id: &str) -> Result<String, Error> {
         let user = self
             .get_user(session_id)
             .await
             .ok_or(0)
-            .map_err(|_| "Session not found")?;
+            .map_err(|_| "Session Expired!!")?;
 
         let sessions = self
             .client
@@ -185,7 +185,7 @@ impl DataAccess for DBDataAccess {
                     Err::<(), Error>(err.into())
                 })?;
         }
-
-        Ok(())
+        let user = user.as_s().unwrap()[5..].to_string();
+        Ok(user)
     }
 }
