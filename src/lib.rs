@@ -7,6 +7,7 @@ use lambda_http::{
 use model::{
     session::{session_key, Session},
     user::{from_item, user_key, User},
+    vehicle::Vehicle,
 };
 
 pub mod model;
@@ -16,6 +17,7 @@ pub trait DataAccess {
     async fn create_user(&self, user: User) -> Result<(), Error>;
     async fn get_session(&self, user: User) -> Result<Session, Error>;
     async fn delete_session(&self, token: &str) -> Result<String, Error>;
+    async fn add_vehicle(&self, car: Vehicle) -> Result<(), Error>;
 }
 
 pub struct DBDataAccess {
@@ -187,5 +189,9 @@ impl DataAccess for DBDataAccess {
         }
         let user = user.as_s().unwrap()[5..].to_string();
         Ok(user)
+    }
+
+    async fn add_vehicle(&self, _car: Vehicle) -> Result<(), Error> {
+        todo!()
     }
 }

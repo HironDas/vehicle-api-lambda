@@ -40,4 +40,8 @@ path = "src/bin/signup.rs"
 name = "delete-session"
 path = "src/bin/delete_session.rs"
 
+[[bin]]
+name = "add-vehicle"
+path = "src/bin/add_vehicle.rs"
+
 

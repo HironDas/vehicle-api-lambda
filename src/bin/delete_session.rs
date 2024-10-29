@@ -46,7 +46,13 @@ async fn delete_session<T: DataAccess>(
         .and_then(|usr| {
             return Ok(Response::builder()
                 .status(200)
-                .body(format!("{{\"message\": \"All Sessions of the user {} is deleted\"}}", usr).into())
+                .body(
+                    format!(
+                        "{{\"message\": \"All Sessions of the user {} is deleted\"}}",
+                        usr
+                    )
+                    .into(),
+                )
                 .unwrap());
         })
         .or_else(|err| {
