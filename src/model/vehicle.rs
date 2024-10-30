@@ -33,6 +33,10 @@ impl Vehicle {
         }
     }
 
+    pub fn get_key(&self)->AttributeValue{
+        vehicle_key(self.vehicle_no.as_ref())
+    }
+
     pub fn to_item(self) -> HashMap<String, AttributeValue> {
         HashMap::from([
             ("PK".to_string(), vehicle_key(&self.vehicle_no)),
@@ -78,4 +82,12 @@ impl Vehicle {
 
 pub fn vehicle_key(car_id: &str) -> AttributeValue {
     AttributeValue::S(["CAR#", car_id].join(""))
+}
+
+pub fn vehicle_from_item(_vehicle_itme: &HashMap<String, AttributeValue>)->Vehicle{
+    todo!()
+}
+
+pub fn vehicle_repo(_items: Vec<HashMap<String, AttributeValue>>)-> Vec<Vehicle>{
+    todo!()
 }
