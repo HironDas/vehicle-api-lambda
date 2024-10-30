@@ -81,6 +81,7 @@ impl DBDataAccess {
         match item {
             Some(item) => {
                 let user: User = from_item(&item);
+                tracing::info!("*****User Info****{:?}", user);
                 user.varify(password)
             }
             None => false,
@@ -194,26 +195,23 @@ impl DataAccess for DBDataAccess {
     }
 
     async fn change_pass(&self, token: &str, old_pass: &str, new_pass: &str) -> Result<(), Error> {
-        let user = self
+        let user = self.get_user(token).await.ok_or("Session Expired!! login Again.")?;
+        
+        
+       let user =  self
             .client
-            .query()
+            .get_item()
             .table_name(&self.table_name)
-            .index_name("GSI1")
-            .key_condition_expression("#session_id = :token")
-            .expression_attribute_names("#session_id", "GSI1PK")
-            .expression_attribute_values(":token", session_key(token))
+            .key("PK", user.clone())
+            .key("SK", user)
             .send()
             .await
             .unwrap()
-            .items
-            .ok_or("Session Expired!! login Again.")
-            .unwrap()
-            .iter()
-            .next()
-            .map(|output| from_item(output))
+            .item
+            .map(|output| from_item(&output))
             .unwrap();
 
-        if user.varify(&old_pass) {
+        if user.varify(old_pass) {
             let pass = bcrypt::hash(new_pass).unwrap();
             self.client
                 .update_item()

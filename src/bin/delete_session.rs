@@ -21,9 +21,7 @@ async fn main() -> Result<(), Error> {
     let client = aws_sdk_dynamodb::Client::new(&sdk_config);
     let data_access = DBDataAccess::new(client, table_name);
 
-    run(service_fn(|request| delete_session(&data_access, request))).await?;
-
-    Ok(())
+    run(service_fn(|request| delete_session(&data_access, request))).await
 }
 
 #[tracing::instrument( skip(data_access, req), fields(request_id = req.lambda_context().request_id))]

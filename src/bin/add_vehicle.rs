@@ -1,4 +1,5 @@
 use lambda_http::{run, service_fn, tracing, Error, Request, RequestExt, Response};
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt()

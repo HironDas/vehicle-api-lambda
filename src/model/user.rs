@@ -73,7 +73,7 @@ pub fn user_key(username: &str) -> aws_sdk_dynamodb::types::AttributeValue {
 }
 
 pub fn from_item(item: &HashMap<String, aws_sdk_dynamodb::types::AttributeValue>) -> User {
-    let username = item.get("PK").unwrap().as_s().unwrap().to_string()[4..].to_string();
+    let username = item.get("PK").unwrap().as_s().unwrap().to_string()[5..].to_string();
     let password = item.get("password").unwrap().as_s().unwrap().to_string();
     let phone: Option<String> = item.get("phone").map(|s| s.as_s().unwrap().to_string());
     User::new(username, password, phone)
