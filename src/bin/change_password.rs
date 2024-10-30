@@ -1,5 +1,5 @@
 use aws_config::BehaviorVersion;
-use lambda_http::{run, service_fn, tracing, Body, Error, Request, Response};
+use lambda_http::{run, service_fn, tracing, Body, Error, Request, RequestExt, Response};
 use vehicle_management_lambda::{DBDataAccess, DataAccess};
 
 #[tokio::main]
@@ -21,6 +21,7 @@ async fn main() -> Result<(), Error> {
     run(service_fn(|req| change_pass_handeler(&db_access, req))).await
 }
 
+#[tracing::instrument( skip(data_access, request), fields(request_id = request.lambda_context().request_id))]
 async fn change_pass_handeler(
     data_access: &impl DataAccess,
     request: Request,
