@@ -9,6 +9,7 @@ use model::{
     user::{from_item, user_key, User},
     vehicle::Vehicle,
 };
+use pwhash::bcrypt;
 
 pub mod model;
 
@@ -18,6 +19,7 @@ pub trait DataAccess {
     async fn get_session(&self, user: User) -> Result<Session, Error>;
     async fn delete_session(&self, token: &str) -> Result<String, Error>;
     async fn add_vehicle(&self, car: Vehicle) -> Result<(), Error>;
+    async fn change_pass(&self, token: &str, old_pass: &str, new_pass: &str) -> Result<(), Error>;
 }
 
 pub struct DBDataAccess {
@@ -189,6 +191,47 @@ impl DataAccess for DBDataAccess {
         }
         let user = user.as_s().unwrap()[5..].to_string();
         Ok(user)
+    }
+
+    async fn change_pass(&self, token: &str, old_pass: &str, new_pass: &str) -> Result<(), Error> {
+        let user = self
+            .client
+            .query()
+            .table_name(&self.table_name)
+            .index_name("GSI1")
+            .key_condition_expression("#session_id = :token")
+            .expression_attribute_names("#session_id", "GSI1PK")
+            .expression_attribute_values(":token", session_key(token))
+            .send()
+            .await
+            .unwrap()
+            .items
+            .ok_or("Session Expired!! login Again.")
+            .unwrap()
+            .iter()
+            .next()
+            .map(|output| from_item(output))
+            .unwrap();
+
+        if user.varify(&old_pass) {
+            let pass = bcrypt::hash(new_pass).unwrap();
+            self.client
+                .update_item()
+                .table_name(&self.table_name)
+                .key("PK", user.get_key())
+                .key("SK", user.get_key())
+                .update_expression("SET password = :password")
+                .expression_attribute_values(":password", AttributeValue::S(pass))
+                .send()
+                .await
+                .and_then(|output| {
+                    tracing::info!("updated user: {:#?}", output);
+                    Ok(())
+                })
+                .or_else(|err| Err::<(), Error>(err.into()))
+        } else {
+            Err("Password is not valid!!!".into())
+        }
     }
 
     async fn add_vehicle(&self, _car: Vehicle) -> Result<(), Error> {

@@ -1,4 +1,5 @@
-use lambda_http::{run, service_fn, tracing, Error, Request, RequestExt, Response};
+use lambda_http::{tracing, Error};
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt()
@@ -9,6 +10,5 @@ async fn main() -> Result<(), Error> {
         .with_target(false)
         .without_time()
         .init();
-
     todo!()
 }

@@ -60,10 +60,10 @@ async fn signup<T: DataAccess>(data_access: &T, req: Request) -> Result<Response
                 .body("{'message':'Signup successful!!'}".into())
                 .unwrap())
         })
-        .or_else(|err| {
+        .or_else(|_err| {
             Ok(Response::builder()
                 .status(400)
-                .body(format!("{{\"message\": \"{}\" }}", err.to_string()).into())
+                .body(format!("{{\"message\": \"Username already exist!!\" }}").into())
                 .unwrap())
         })
 }

@@ -5,9 +5,12 @@ use vehicle_management_lambda::{DBDataAccess, DataAccess};
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     tracing_subscriber::fmt()
-        // .json()
+        .json()
         .with_max_level(tracing::Level::INFO)
+        .with_current_span(false)
+        .with_ansi(false)
         .with_target(false)
+        .without_time()
         .init();
 
     let table_name: String = std::env::var("TABLE_NAME").unwrap_or("VehicleDB".to_string());

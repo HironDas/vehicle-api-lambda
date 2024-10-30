@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use aws_sdk_dynamodb::types::AttributeValue;
 use chrono::{SecondsFormat, Utc};
 use pwhash::bcrypt;
 use serde::{Deserialize, Serialize};
@@ -22,6 +23,10 @@ impl User {
 
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
+    }
+
+    pub fn get_key(&self) -> AttributeValue {
+        user_key(&self.username)
     }
 
     pub fn varify(&self, password: &str) -> bool {
