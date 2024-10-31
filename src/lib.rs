@@ -248,10 +248,10 @@ impl DataAccess for DBDataAccess {
                 .and_then(|output| {
                     let output = output
                         .attributes()
-                        .map(|item| vehicle_from_item(item))
-                        .unwrap();
+                        .map(|item| vehicle_from_item(item).to_json());
+                        //.unwrap();
 
-                    tracing::info!("New Vehicle Details:  {:#?}", output.to_json());
+                    tracing::info!("New Vehicle Details:  {:#?}", output);
                     Ok(())
                 })
                 .or_else(|err| {

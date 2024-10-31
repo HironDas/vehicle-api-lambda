@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use aws_sdk_dynamodb::types::AttributeValue;
-use chrono::{SecondsFormat, TimeZone, Utc};
+use chrono::{Date, NaiveDate, SecondsFormat, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -26,7 +26,7 @@ impl Vehicle {
         Self {
             vehicle_no,
             owner,
-            tax_date,
+            tax_date, //: tax_date.format("%Y-%m-%d").to_string(),
             fitness_date,
             insurance_date,
             route_date,
@@ -48,8 +48,7 @@ impl Vehicle {
             (
                 "fitness_date".to_string(),
                 AttributeValue::S(
-                    Utc::from_utc_datetime(self.fitness_date)
-                        .to_rfc3339_opts(SecondsFormat::Secs, true),
+                    self.fitness_date
                 ),
             ),
             ("tax_date".to_string(), AttributeValue::S(self.tax_date)),
@@ -122,6 +121,8 @@ pub fn vehicle_from_item(vehicle_itme: &HashMap<String, AttributeValue>) -> Vehi
         .as_s()
         .unwrap()
         .to_string();
+
+    // let tax_date = NaiveDate::parse_from_str(&tax_date, "%Y-%m-%d").unwrap();
 
     Vehicle::new(
         vehicle_no,
