@@ -7,7 +7,7 @@ use lambda_http::{
 use model::{
     session::{session_key, Session},
     user::{from_item, user_key, User},
-    vehicle::Vehicle,
+    vehicle::{vehicle_from_item, Vehicle},
 };
 use pwhash::bcrypt;
 
@@ -128,7 +128,7 @@ impl DataAccess for DBDataAccess {
             .send()
             .await
             .and_then(|output| {
-                tracing::info!("Item Output {:#?}", output);
+                // tracing::info!("Item Output {:#?}", output);
                 Ok(())
             })
             .or_else(|err| {
@@ -195,10 +195,12 @@ impl DataAccess for DBDataAccess {
     }
 
     async fn change_pass(&self, token: &str, old_pass: &str, new_pass: &str) -> Result<(), Error> {
-        let user = self.get_user(token).await.ok_or("Session Expired!! login Again.")?;
-        
-        
-       let user =  self
+        let user = self
+            .get_user(token)
+            .await
+            .ok_or("Session Expired!! login Again.")?;
+
+        let user = self
             .client
             .get_item()
             .table_name(&self.table_name)
@@ -220,10 +222,11 @@ impl DataAccess for DBDataAccess {
                 .key("SK", user.get_key())
                 .update_expression("SET password = :password")
                 .expression_attribute_values(":password", AttributeValue::S(pass))
+                // .return_values(aws_sdk_dynamodb::types::ReturnValue::UpdatedNew)
                 .send()
                 .await
-                .and_then(|output| {
-                    tracing::info!("updated user: {:#?}", output);
+                .and_then(|_output| {
+                    // tracing::info!("updated user: {:#?}", output.attributes);
                     Ok(())
                 })
                 .or_else(|err| Err::<(), Error>(err.into()))
@@ -232,7 +235,30 @@ impl DataAccess for DBDataAccess {
         }
     }
 
-    async fn add_vehicle(&self, _car: Vehicle) -> Result<(), Error> {
-        todo!()
+    async fn add_vehicle(&self, car: Vehicle) -> Result<(), Error> {
+        self.client
+            .put_item()
+            .table_name(&self.table_name)
+            .set_item(Some(car.to_item()))
+            .condition_expression("attribute_not_exists(PK) and attribute_not_exists(SK)")
+            .send()
+            .await
+            .and_then(|output| {
+                let output = output
+                    .item_collection_metrics
+                    .unwrap()
+                    .item_collection_key
+                    .iter()
+                    .next()
+                    .map(|item| vehicle_from_item(item))
+                    .unwrap();
+
+                tracing::info!("New Vehicle Details:  {:#?}", output.to_json());
+                Ok(())
+            })
+            .or_else(|err| {
+                tracing::error!(%err, "Error Message");
+                Err(err.into())
+            })
     }
 }

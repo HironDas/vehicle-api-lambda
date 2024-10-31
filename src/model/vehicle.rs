@@ -33,8 +33,11 @@ impl Vehicle {
         }
     }
 
-    pub fn get_key(&self)->AttributeValue{
+    pub fn get_key(&self) -> AttributeValue {
         vehicle_key(self.vehicle_no.as_ref())
+    }
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(self).unwrap()
     }
 
     pub fn to_item(self) -> HashMap<String, AttributeValue> {
@@ -84,10 +87,49 @@ pub fn vehicle_key(car_id: &str) -> AttributeValue {
     AttributeValue::S(["CAR#", car_id].join(""))
 }
 
-pub fn vehicle_from_item(_vehicle_itme: &HashMap<String, AttributeValue>)->Vehicle{
-    todo!()
+pub fn vehicle_from_item(vehicle_itme: &HashMap<String, AttributeValue>) -> Vehicle {
+    let vehicle_no = vehicle_itme.get("SK").unwrap().as_s().unwrap()[4..].to_string();
+    let owner = vehicle_itme
+        .get("owner")
+        .unwrap()
+        .as_s()
+        .unwrap()
+        .to_string();
+    let tax_date = vehicle_itme
+        .get("tax_date")
+        .unwrap_or(&AttributeValue::S(String::from("")))
+        .as_s()
+        .unwrap()
+        .to_string();
+    let fitness_date = vehicle_itme
+        .get("fitness_date")
+        .unwrap_or(&AttributeValue::S(String::from("")))
+        .as_s()
+        .unwrap()
+        .to_string();
+    let route_date = vehicle_itme
+        .get("route_date")
+        .unwrap_or(&AttributeValue::S(String::from("")))
+        .as_s()
+        .unwrap()
+        .to_string();
+    let insurance_date = vehicle_itme
+        .get("insurance_date")
+        .unwrap_or(&AttributeValue::S(String::from("")))
+        .as_s()
+        .unwrap()
+        .to_string();
+
+    Vehicle::new(
+        vehicle_no,
+        owner,
+        tax_date,
+        fitness_date,
+        insurance_date,
+        route_date,
+    )
 }
 
-pub fn vehicle_repo(_items: Vec<HashMap<String, AttributeValue>>)-> Vec<Vehicle>{
-    todo!()
+pub fn vehicle_repo(items: Vec<HashMap<String, AttributeValue>>) -> Vec<Vehicle> {
+    items.iter().map(|item| vehicle_from_item(item)).collect()
 }

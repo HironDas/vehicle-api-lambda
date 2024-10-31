@@ -26,16 +26,14 @@ async fn change_pass_handeler(
     data_access: &impl DataAccess,
     request: Request,
 ) -> Result<Response<Body>, Error> {
-    let token = request
-        .headers()
-        .get("Authorization");
+    let token = request.headers().get("Authorization");
 
-        if token.is_none() {
-            return Ok(Response::builder()
-                .status(401)
-                .body("{\"message\": \"Unauthorized\"}".into())
-                .unwrap());
-        }
+    if token.is_none() {
+        return Ok(Response::builder()
+            .status(401)
+            .body("{\"message\": \"Unauthorized\"}".into())
+            .unwrap());
+    }
     let token = token.unwrap().to_str().unwrap();
 
     let passmsg = match request.body() {
