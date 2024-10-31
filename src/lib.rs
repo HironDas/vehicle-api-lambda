@@ -18,7 +18,7 @@ pub trait DataAccess {
     async fn create_user(&self, user: User) -> Result<(), Error>;
     async fn get_session(&self, user: User) -> Result<Session, Error>;
     async fn delete_session(&self, token: &str) -> Result<String, Error>;
-    async fn add_vehicle(&self, car: Vehicle) -> Result<(), Error>;
+    async fn add_vehicle(&self, token: &str, car: Vehicle) -> Result<(), Error>;
     async fn change_pass(&self, token: &str, old_pass: &str, new_pass: &str) -> Result<(), Error>;
 }
 
@@ -127,7 +127,7 @@ impl DataAccess for DBDataAccess {
             .condition_expression("attribute_not_exists(PK) and attribute_not_exists(SK)")
             .send()
             .await
-            .and_then(|output| {
+            .and_then(|_output| {
                 // tracing::info!("Item Output {:#?}", output);
                 Ok(())
             })
@@ -235,30 +235,31 @@ impl DataAccess for DBDataAccess {
         }
     }
 
-    async fn add_vehicle(&self, car: Vehicle) -> Result<(), Error> {
-        self.client
-            .put_item()
-            .table_name(&self.table_name)
-            .set_item(Some(car.to_item()))
-            .condition_expression("attribute_not_exists(PK) and attribute_not_exists(SK)")
-            .send()
-            .await
-            .and_then(|output| {
-                let output = output
-                    .item_collection_metrics
-                    .unwrap()
-                    .item_collection_key
-                    .iter()
-                    .next()
-                    .map(|item| vehicle_from_item(item))
-                    .unwrap();
+    async fn add_vehicle(&self, token: &str, car: Vehicle) -> Result<(), Error> {
+        if self.is_session_vaild(token).await {
+            self.client
+                .put_item()
+                .table_name(&self.table_name)
+                .set_item(Some(car.to_item()))
+                .condition_expression("attribute_not_exists(PK) and attribute_not_exists(SK)")
+                .return_values(aws_sdk_dynamodb::types::ReturnValue::AllOld)
+                .send()
+                .await
+                .and_then(|output| {
+                    let output = output
+                        .attributes()
+                        .map(|item| vehicle_from_item(item))
+                        .unwrap();
 
-                tracing::info!("New Vehicle Details:  {:#?}", output.to_json());
-                Ok(())
-            })
-            .or_else(|err| {
-                tracing::error!(%err, "Error Message");
-                Err(err.into())
-            })
+                    tracing::info!("New Vehicle Details:  {:#?}", output.to_json());
+                    Ok(())
+                })
+                .or_else(|err| {
+                    tracing::error!(%err, "Error Message");
+                    Err(err.into())
+                })
+        } else {
+            Err("You don't have access!!".into())
+        }
     }
 }

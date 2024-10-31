@@ -1,6 +1,5 @@
 use aws_sdk_dynamodb::config::BehaviorVersion;
 use lambda_http::{run, service_fn, tracing, Body, Error, Request, RequestExt, Response};
-use serde_json::json;
 use vehicle_management_lambda::{self, model::user::User, DBDataAccess, DataAccess};
 
 #[tokio::main]
