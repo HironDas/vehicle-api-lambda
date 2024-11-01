@@ -7,7 +7,7 @@ use lambda_http::{
 use model::{
     session::{session_key, Session},
     user::{from_item, user_key, User},
-    vehicle::{vehicle_from_item, Vehicle},
+    vehicle::{vehicle_from_item, vehicle_repo, Vehicle},
 };
 use pwhash::bcrypt;
 
@@ -20,6 +20,7 @@ pub trait DataAccess {
     async fn delete_session(&self, token: &str) -> Result<String, Error>;
     async fn add_vehicle(&self, token: &str, car: Vehicle) -> Result<(), Error>;
     async fn change_pass(&self, token: &str, old_pass: &str, new_pass: &str) -> Result<(), Error>;
+    async fn get_all_vehicle(&self, token: &str) -> Result<Vec<Vehicle>, Error>;
 }
 
 pub struct DBDataAccess {
@@ -260,6 +261,31 @@ impl DataAccess for DBDataAccess {
                     tracing::error!(%err, "Error Message");
                     Err(err.into())
                 })
+        } else {
+            Err("You don't have access!!".into())
+        }
+    }
+
+    async fn get_all_vehicle(&self, token: &str) -> Result<Vec<Vehicle>, Error> {
+        if self.is_session_vaild(token).await {
+            let vehicle_items = self
+                .client
+                .query()
+                .table_name(&self.table_name)
+                .index_name("GSI7")
+                .key_condition_expression("#vehicle = :vehicle_key")
+                .expression_attribute_names("#vehicle", "GSI7PK")
+                .expression_attribute_values(
+                    ":vehicle_key",
+                    AttributeValue::S("VEHICLE".to_string()),
+                )
+                .send()
+                .await
+                .unwrap()
+                .items
+                .unwrap();
+
+            Ok(vehicle_repo(vehicle_items))
         } else {
             Err("You don't have access!!".into())
         }

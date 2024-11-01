@@ -48,4 +48,6 @@ path = "src/bin/change_password.rs"
 name = "add-vehicle"
 path = "src/bin/add_vehicle.rs"
 
-
+[[bin]]
+name = "vehicle"
+path = "src/bin/get_vehicles.rs"

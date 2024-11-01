@@ -107,10 +107,10 @@ pub fn vehicle_from_item(vehicle_itme: &HashMap<String, AttributeValue>) -> Vehi
     let vehicle_no = &vehicle_itme.get("SK").unwrap().as_s().unwrap()[4..];
     let vehicle_no = format!(
         "{}-{}-{}-{}",
-        &vehicle_no[..4],
-        &vehicle_no[4..6],
-        &vehicle_no[6..8],
-        &vehicle_no[8..] 
+        &vehicle_no[..3],
+        &vehicle_no[3..5],
+        &vehicle_no[5..7],
+        &vehicle_no[7..]
     );
     let owner = vehicle_itme
         .get("owner")
