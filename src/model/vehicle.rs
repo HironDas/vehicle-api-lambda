@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use aws_sdk_dynamodb::types::AttributeValue;
-use chrono::{Date, NaiveDate, SecondsFormat, TimeZone, Utc};
+use chrono::{SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -41,15 +41,19 @@ impl Vehicle {
     }
 
     pub fn to_item(self) -> HashMap<String, AttributeValue> {
+        let last4_digit = self.vehicle_no
+        .char_indices()
+        .rev()
+        .nth(3)
+        .map(|(i, _)| &self.vehicle_no[i..]);
+
         HashMap::from([
             ("PK".to_string(), vehicle_key(&self.vehicle_no)),
             ("SK".to_string(), vehicle_key(&self.vehicle_no)),
             ("owner".to_string(), AttributeValue::S(self.owner)),
             (
                 "fitness_date".to_string(),
-                AttributeValue::S(
-                    self.fitness_date
-                ),
+                AttributeValue::S(self.fitness_date),
             ),
             ("tax_date".to_string(), AttributeValue::S(self.tax_date)),
             ("route_date".to_string(), AttributeValue::S(self.route_date)),
@@ -81,12 +85,17 @@ impl Vehicle {
             ("GSI5PK".to_string(), AttributeValue::S(format!("FEE#TAX"))),
             ("GSI5SK".to_string(), vehicle_key(&self.vehicle_no)),
             ("GSI7PK".to_string(), AttributeValue::S(format!("VEHICLE"))),
+            ("GSI8PK".to_string(), vehicle_search_key(last4_digit.unwrap())),
         ])
     }
 }
 
 pub fn vehicle_key(car_id: &str) -> AttributeValue {
     AttributeValue::S(["CAR#", car_id].join(""))
+}
+
+pub fn vehicle_search_key(id: &str)-> AttributeValue{
+    AttributeValue::S(format!("SEARCH#{}", id))
 }
 
 pub fn vehicle_from_item(vehicle_itme: &HashMap<String, AttributeValue>) -> Vehicle {

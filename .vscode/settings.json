@@ -2,15 +2,15 @@
     "serverlessConsole.services": [
         {
             "type": "dynamodb",
-            "title": "VehicleDB",
-            "tableName": "VehicleDB",
+            "title": "SessionStore",
+            "tableName": "SessionStore",
             "awsProfile": "default",
             "region": "ap-south-1"
         },
         {
             "type": "dynamodb",
-            "title": "SessionStore",
-            "tableName": "SessionStore",
+            "title": "VehicleDB",
+            "tableName": "VehicleDB",
             "awsProfile": "default",
             "region": "ap-south-1"
         }

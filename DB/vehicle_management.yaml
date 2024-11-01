@@ -38,6 +38,8 @@ AttributeDefinitions:
     AttributeType: S
   - AttributeName: GSI7PK
     AttributeType: S
+  - AttributeName: GSI8PK
+    AttributeType: S
 
 KeySchema:
   - AttributeName: "PK"
@@ -130,6 +132,15 @@ GlobalSecondaryIndexes:
         KeyType: "HASH"
     Projection:
       ProjectionType: "ALL"
+    ProvisionedThroughput:
+      ReadCapacityUnits: 1
+      WriteCapacityUnits: 1
+  - IndexName: "GSI8"
+    KeySchema:
+      - AttributeName: "GSI8PK"
+        KeyType: "HASH"
+    Projection:
+      ProjectionType: "KEYS_ONLY"
     ProvisionedThroughput:
       ReadCapacityUnits: 1
       WriteCapacityUnits: 1

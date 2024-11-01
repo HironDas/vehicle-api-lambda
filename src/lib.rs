@@ -100,12 +100,14 @@ impl DBDataAccess {
             .send()
             .await
             .unwrap()
-            .items?
+            .items?;
+        
+        tracing::info!("USER: {:#?}", user);
+
+        let user = user
             .iter()
             .next()
             .map(|user| user.get("GSI1SK").unwrap().to_owned());
-
-        tracing::info!("USER: {:#?}", user);
 
         user
     }
@@ -249,7 +251,7 @@ impl DataAccess for DBDataAccess {
                     let output = output
                         .attributes()
                         .map(|item| vehicle_from_item(item).to_json());
-                        //.unwrap();
+                    //.unwrap();
 
                     tracing::info!("New Vehicle Details:  {:#?}", output);
                     Ok(())
