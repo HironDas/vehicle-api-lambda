@@ -41,11 +41,12 @@ impl Vehicle {
     }
 
     pub fn to_item(self) -> HashMap<String, AttributeValue> {
-        let last4_digit = self.vehicle_no
-        .char_indices()
-        .rev()
-        .nth(3)
-        .map(|(i, _)| &self.vehicle_no[i..]);
+        let last4_digit = self
+            .vehicle_no
+            .char_indices()
+            .rev()
+            .nth(3)
+            .map(|(i, _)| &self.vehicle_no[i..]);
 
         HashMap::from([
             ("PK".to_string(), vehicle_key(&self.vehicle_no)),
@@ -85,21 +86,32 @@ impl Vehicle {
             ("GSI5PK".to_string(), AttributeValue::S(format!("FEE#TAX"))),
             ("GSI5SK".to_string(), vehicle_key(&self.vehicle_no)),
             ("GSI7PK".to_string(), AttributeValue::S(format!("VEHICLE"))),
-            ("GSI8PK".to_string(), vehicle_search_key(last4_digit.unwrap())),
+            (
+                "GSI8PK".to_string(),
+                vehicle_search_key(last4_digit.unwrap()),
+            ),
         ])
     }
 }
 
 pub fn vehicle_key(car_id: &str) -> AttributeValue {
+    let car_id = &*car_id.split("-").collect::<Vec<&str>>().join("");
     AttributeValue::S(["CAR#", car_id].join(""))
 }
 
-pub fn vehicle_search_key(id: &str)-> AttributeValue{
+pub fn vehicle_search_key(id: &str) -> AttributeValue {
     AttributeValue::S(format!("SEARCH#{}", id))
 }
 
 pub fn vehicle_from_item(vehicle_itme: &HashMap<String, AttributeValue>) -> Vehicle {
-    let vehicle_no = vehicle_itme.get("SK").unwrap().as_s().unwrap()[4..].to_string();
+    let vehicle_no = &vehicle_itme.get("SK").unwrap().as_s().unwrap()[4..];
+    let vehicle_no = format!(
+        "{}-{}-{}-{}",
+        &vehicle_no[..4],
+        &vehicle_no[4..6],
+        &vehicle_no[6..8],
+        &vehicle_no[8..] 
+    );
     let owner = vehicle_itme
         .get("owner")
         .unwrap()

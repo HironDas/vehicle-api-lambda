@@ -101,7 +101,7 @@ impl DBDataAccess {
             .await
             .unwrap()
             .items?;
-        
+
         tracing::info!("USER: {:#?}", user);
 
         let user = user
