@@ -3,13 +3,14 @@ Cretate User,main table,,Create username and password for signup
 User login/ Create Session/ get Session,main table,username,UUID will be created
 Delete Session Time Based Deletion,main table,N/A,Delete all sessions using TTL (time to live) feature of DynamoDB
 Varify User,GSI1,token,verify the token is valid or expire
-Delete Session Manual,main table,username,delete all sessions of a specific user.
+Change Password,main table,token,
+Delete Session Manual,main table,token,delete all sessions of a specific user.
 All Vehicles,GSI7,,get all cars details
-Add Vehicle,main table ,,Add new cars in DB
-Update Vehicle,main table ,carNumber,"update tax, route, fitness, insurance, or owner info "
-View fitness  fee detailes,GSI2,days,get all fitness fee details based on the date range 
-View insurance  fee detailes,GSI3,days,get all insurance fee details based on the date range 
-View route fee detailes,GSI4,days,get all Roure permit fee details based on the date range 
-View tax  fee detailes,GSI5,days,get all Tax token fee details based on the date range 
+Add Vehicle,"main table ",,Add new cars in DB
+Update Vehicle,"main table ",carNumber,"update tax, route, fitness, insurance, or owner info "
+View fitness  fee detailes,GSI2,days,"get all fitness fee details based on the date range "
+View insurance  fee detailes,GSI3,days,"get all insurance fee details based on the date range "
+View route fee detailes,GSI4,days,"get all Roure permit fee details based on the date range "
+View tax  fee detailes,GSI5,days,"get all Tax token fee details based on the date range "
 Transaction History,GSI6,,show all history
 Search history by carNumber,main table,carNumber,search transaction history
