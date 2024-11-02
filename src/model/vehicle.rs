@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use aws_sdk_dynamodb::types::AttributeValue;
-use chrono::{SecondsFormat, Utc};
+use chrono::{NaiveDate, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -23,10 +23,21 @@ impl Vehicle {
         insurance_date: String,
         route_date: String,
     ) -> Self {
+        fn date_formatter(date: &str) -> NaiveDate {
+            let date: Vec<u32> = date.split("-").map(|d| d.parse::<u32>().unwrap()).collect();
+            NaiveDate::from_ymd_opt(date[0] as i32, date[1], date[2]).unwrap()
+        }
+        let tax_date = date_formatter(&tax_date).format("%Y-%m-%d").to_string();
+        let fitness_date = date_formatter(&fitness_date).format("%Y-%m-%d").to_string();
+        let insurance_date = date_formatter(&insurance_date)
+            .format("%Y-%m-%d")
+            .to_string();
+        let route_date = date_formatter(&route_date).format("%Y-%m-%d").to_string();
+
         Self {
             vehicle_no,
             owner,
-            tax_date, //: tax_date.format("%Y-%m-%d").to_string(),
+            tax_date,
             fitness_date,
             insurance_date,
             route_date,

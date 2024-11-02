@@ -18,8 +18,8 @@ pub trait DataAccess {
     async fn create_user(&self, user: User) -> Result<(), Error>;
     async fn get_session(&self, user: User) -> Result<Session, Error>;
     async fn delete_session(&self, token: &str) -> Result<String, Error>;
-    async fn add_vehicle(&self, token: &str, car: Vehicle) -> Result<(), Error>;
     async fn change_pass(&self, token: &str, old_pass: &str, new_pass: &str) -> Result<(), Error>;
+    async fn add_vehicle(&self, token: &str, car: Vehicle) -> Result<(), Error>;
     async fn get_all_vehicle(&self, token: &str) -> Result<Vec<Vehicle>, Error>;
 }
 

@@ -43,7 +43,14 @@ async fn add_vehicle_handeler(
 
     if let Body::Text(text) = request.body() {
         let car = match serde_json::from_str::<Vehicle>(&text) {
-            Ok(vehicle) => vehicle,
+            Ok(vehicle) => Vehicle::new(
+                vehicle.vehicle_no,
+                vehicle.owner,
+                vehicle.tax_date,
+                vehicle.fitness_date,
+                vehicle.insurance_date,
+                vehicle.route_date,
+            ),
             Err(_) => {
                 return Ok(Response::builder()
                     .status(400)
