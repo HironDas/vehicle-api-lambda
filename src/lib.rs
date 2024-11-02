@@ -1,8 +1,11 @@
+use std::fmt::format;
+
 use async_trait::async_trait;
 use aws_sdk_dynamodb::{
     types::{AttributeValue, Put, TransactWriteItem},
     Client,
 };
+use chrono::{Duration, Local, NaiveDate};
 use lambda_http::{
     tracing::{self},
     Error,
@@ -90,6 +93,44 @@ impl DBDataAccess {
             }
             None => false,
         }
+    }
+
+    async fn get_fees_info(
+        &self,
+        index: &str,
+        index_type: &str,
+        days: u32,
+    ) -> Result<Vec<Vehicle>, Error> {
+        let vehicle_items = self.client
+            .query()
+            .table_name(&self.table_name)
+            .index_name(index)
+            .key_condition_expression("#feesPK = :feesPK and #time between :stime and :etime")
+            .expression_attribute_names("#feesPK", format!("{}PK", index))
+            .expression_attribute_values(
+                ":feesPK",
+                AttributeValue::S(format!("FEE#{}", index_type.to_uppercase())),
+            )
+            .expression_attribute_names("#time", format!("{}_date", index_type.to_lowercase()))
+            .expression_attribute_values(
+                ":stime",
+                AttributeValue::S(Local::now().format("%Y-%m-%d").to_string()),
+            )
+            .expression_attribute_values(
+                ":etime",
+                AttributeValue::S(
+                    (Local::now() + Duration::days(days as i64))
+                        .format("%Y-%m-%d")
+                        .to_string(),
+                ),
+            )
+            .send()
+            .await
+            .unwrap()
+            .items
+            .unwrap();
+
+        Ok(vehicle_repo(vehicle_items))
     }
 
     async fn get_user(&self, token: &str) -> Option<AttributeValue> {
@@ -275,13 +316,6 @@ impl DataAccess for DBDataAccess {
                     tracing::error!(%err, "Error Message");
                     Err(err.into())
                 })
-
-            // .table_name(&self.table_name)
-            // .set_item(Some(car.to_item()))
-            // .condition_expression("attribute_not_exists(PK) and attribute_not_exists(SK)")
-            // .return_values(aws_sdk_dynamodb::types::ReturnValue::AllOld)
-            // .send()
-            // .await
         } else {
             Err("You don't have access!!".into())
         }
