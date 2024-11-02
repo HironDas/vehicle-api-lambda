@@ -1,5 +1,8 @@
 use async_trait::async_trait;
-use aws_sdk_dynamodb::{types::AttributeValue, Client};
+use aws_sdk_dynamodb::{
+    types::{AttributeValue, Put, TransactWriteItem},
+    Client,
+};
 use lambda_http::{
     tracing::{self},
     Error,
@@ -240,20 +243,31 @@ impl DataAccess for DBDataAccess {
 
     async fn add_vehicle(&self, token: &str, car: Vehicle) -> Result<(), Error> {
         if self.is_session_vaild(token).await {
-            self.client
-                .put_item()
+            let put_search = Put::builder()
+                .table_name(&self.table_name)
+                .set_item(Some(car.to_search_item()))
+                .condition_expression("attribute_not_exists(PK) and attribute_not_exists(SK)")
+                .build()
+                .unwrap();
+
+            let add_search = TransactWriteItem::builder().put(put_search).build();
+
+            let put_vehicle = Put::builder()
                 .table_name(&self.table_name)
                 .set_item(Some(car.to_item()))
                 .condition_expression("attribute_not_exists(PK) and attribute_not_exists(SK)")
-                .return_values(aws_sdk_dynamodb::types::ReturnValue::AllOld)
+                .build()
+                .unwrap();
+
+            let add_vehicle = TransactWriteItem::builder().put(put_vehicle).build();
+
+            self.client
+                .transact_write_items()
+                .transact_items(add_vehicle)
+                .transact_items(add_search)
                 .send()
                 .await
                 .and_then(|output| {
-                    let output = output
-                        .attributes()
-                        .map(|item| vehicle_from_item(item).to_json());
-                    //.unwrap();
-
                     tracing::info!("New Vehicle Details:  {:#?}", output);
                     Ok(())
                 })
@@ -261,6 +275,13 @@ impl DataAccess for DBDataAccess {
                     tracing::error!(%err, "Error Message");
                     Err(err.into())
                 })
+
+            // .table_name(&self.table_name)
+            // .set_item(Some(car.to_item()))
+            // .condition_expression("attribute_not_exists(PK) and attribute_not_exists(SK)")
+            // .return_values(aws_sdk_dynamodb::types::ReturnValue::AllOld)
+            // .send()
+            // .await
         } else {
             Err("You don't have access!!".into())
         }

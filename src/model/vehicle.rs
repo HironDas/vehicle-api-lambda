@@ -51,7 +51,7 @@ impl Vehicle {
         serde_json::to_string(self).unwrap()
     }
 
-    pub fn to_item(self) -> HashMap<String, AttributeValue> {
+    pub fn to_search_item(&self) -> HashMap<String, AttributeValue> {
         let last4_digit = self
             .vehicle_no
             .char_indices()
@@ -59,6 +59,17 @@ impl Vehicle {
             .nth(3)
             .map(|(i, _)| &self.vehicle_no[i..]);
 
+        HashMap::from([
+            ("PK".to_string(), AttributeValue::S("SEARCH".to_owned())),
+            ("SK".to_string(), vehicle_search_key(&self.vehicle_no)),
+            (
+                "LSI1SK".to_string(),
+                vehicle_search_key(last4_digit.unwrap()),
+            ),
+        ])
+    }
+
+    pub fn to_item(self) -> HashMap<String, AttributeValue> {
         HashMap::from([
             ("PK".to_string(), vehicle_key(&self.vehicle_no)),
             ("SK".to_string(), vehicle_key(&self.vehicle_no)),
@@ -97,10 +108,6 @@ impl Vehicle {
             ("GSI5PK".to_string(), AttributeValue::S(format!("FEE#TAX"))),
             ("GSI5SK".to_string(), vehicle_key(&self.vehicle_no)),
             ("GSI7PK".to_string(), AttributeValue::S(format!("VEHICLE"))),
-            (
-                "GSI8PK".to_string(),
-                vehicle_search_key(last4_digit.unwrap()),
-            ),
         ])
     }
 }
@@ -111,6 +118,7 @@ pub fn vehicle_key(car_id: &str) -> AttributeValue {
 }
 
 pub fn vehicle_search_key(id: &str) -> AttributeValue {
+    let id = &*id.split("-").collect::<Vec<&str>>().join("");
     AttributeValue::S(format!("SEARCH#{}", id))
 }
 

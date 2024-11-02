@@ -13,4 +13,4 @@ View insurance  fee detailes,GSI3,days,"get all insurance fee details based on t
 View route fee detailes,GSI4,days,"get all Roure permit fee details based on the date range "
 View tax  fee detailes,GSI5,days,"get all Tax token fee details based on the date range "
 Transaction History,GSI6,,show all history
-Search history by carNumber,main table,carNumber,search transaction history
+Search history by carNumber,GSI8,carNumber,search transaction history
