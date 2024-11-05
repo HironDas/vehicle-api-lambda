@@ -27,7 +27,12 @@ pub trait DataAccess {
     async fn change_pass(&self, token: &str, old_pass: &str, new_pass: &str) -> Result<(), Error>;
     async fn add_vehicle(&self, token: &str, car: Vehicle) -> Result<(), Error>;
     async fn get_all_vehicle(&self, token: &str) -> Result<Vec<Vehicle>, Error>;
-    async fn get_vehicles_by_type(&self, token: &str, fee_type: &str, days: i32)->Result<Vec<Vehicle>, Error>;
+    async fn get_vehicles_by_type(
+        &self,
+        token: &str,
+        fee_type: &str,
+        days: u32,
+    ) -> Result<Vec<Vehicle>, Error>;
 }
 
 pub struct DBDataAccess {
@@ -102,16 +107,18 @@ impl DBDataAccess {
         index_type: &str,
         days: u32,
     ) -> Result<Vec<Vehicle>, Error> {
-        let vehicle_items = self.client
+        let vehicle_items = self
+            .client
             .query()
             .table_name(&self.table_name)
             .index_name(index)
-            .key_condition_expression("#feesPK = :feesPK and #time between :stime and :etime")
+            .key_condition_expression("#feesPK = :feesPK")
             .expression_attribute_names("#feesPK", format!("{}PK", index))
             .expression_attribute_values(
                 ":feesPK",
                 AttributeValue::S(format!("FEE#{}", index_type.to_uppercase())),
             )
+            .filter_expression("#time between :stime and :etime")
             .expression_attribute_names("#time", format!("{}_date", index_type.to_lowercase()))
             .expression_attribute_values(
                 ":stime",
@@ -347,8 +354,43 @@ impl DataAccess for DBDataAccess {
         }
     }
 
-    async fn get_vehicles_by_type(&self, token: &str, fee_type: &str, days: i32)->Result<Vec<Vehicle>, Error>{
-        todo!()
+    async fn get_vehicles_by_type(
+        &self,
+        token: &str,
+        fee_type: &str,
+        days: u32,
+    ) -> Result<Vec<Vehicle>, Error> {
+        if self.is_session_vaild(token).await {
+            match fee_type {
+                "fitness" => self.get_fees_info("GSI2", "fitness", days).await,
+                "insurance" => self.get_fees_info("GSI3", "insurance", days).await,
+                "route" => self.get_fees_info("GSI4", "route", days).await,
+                "tax" => self.get_fees_info("GSI5", "tax", days).await,
+                _ => {
+                    let today = Local::now().format("%Y-%m-%d").to_string();
+                    let vehicle_items = self
+                        .client
+                        .query()
+                        .table_name(&self.table_name)
+                        .index_name("GSI7")
+                        .key_condition_expression("#vehicle = :vehicle_key")
+                        .expression_attribute_names("#vehicle", "GSI7PK")
+                        .expression_attribute_values(
+                            ":vehicle_key",
+                            AttributeValue::S("VEHICLE".to_string()),
+                        )
+                        .filter_expression("fitness_date > :date or tax_data > :date or insurance_date > :date or route_date > :date")
+                        .expression_attribute_values(":date", AttributeValue::S(today))
+                        .send()
+                        .await
+                        .unwrap()
+                        .items
+                        .unwrap();
+                    Ok(vehicle_repo(vehicle_items))
+                }
+            }
+        } else {
+            Err("You don't have access!!".into())
+        }
     }
-
 }
