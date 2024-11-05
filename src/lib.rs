@@ -27,6 +27,7 @@ pub trait DataAccess {
     async fn change_pass(&self, token: &str, old_pass: &str, new_pass: &str) -> Result<(), Error>;
     async fn add_vehicle(&self, token: &str, car: Vehicle) -> Result<(), Error>;
     async fn get_all_vehicle(&self, token: &str) -> Result<Vec<Vehicle>, Error>;
+    async fn get_vehicles_by_type(&self, token: &str, fee_type: &str, days: i32)->Result<Vec<Vehicle>, Error>;
 }
 
 pub struct DBDataAccess {
@@ -345,4 +346,9 @@ impl DataAccess for DBDataAccess {
             Err("You don't have access!!".into())
         }
     }
+
+    async fn get_vehicles_by_type(&self, token: &str, fee_type: &str, days: i32)->Result<Vec<Vehicle>, Error>{
+        todo!()
+    }
+
 }
