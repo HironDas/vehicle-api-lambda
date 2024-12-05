@@ -51,3 +51,23 @@ path = "src/bin/add_vehicle.rs"
 [[bin]]
 name = "vehicle"
 path = "src/bin/get_vehicles.rs"
+
+[[bin]]
+name = "fitness"
+path = "src/bin/get_fitness.rs"
+
+[[bin]]
+name = "tax"
+path = "src/bin/get_tax.rs"
+
+[[bin]]
+name = "insurance"
+path = "src/bin/get_insurance.rs"
+
+[[bin]]
+name = "route"
+path = "src/bin/get_route.rs"
+
+[[bin]]
+name = "expire"
+path = "src/bin/get_expire.rs"

@@ -379,7 +379,7 @@ impl DataAccess for DBDataAccess {
                             ":vehicle_key",
                             AttributeValue::S("VEHICLE".to_string()),
                         )
-                        .filter_expression("fitness_date > :date or tax_data > :date or insurance_date > :date or route_date > :date")
+                        .filter_expression("fitness_date < :date or tax_data < :date or insurance_date < :date or route_date < :date")
                         .expression_attribute_values(":date", AttributeValue::S(today))
                         .send()
                         .await
