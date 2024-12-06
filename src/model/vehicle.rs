@@ -90,24 +90,8 @@ impl Vehicle {
             ),
             ("updated_at".to_string(), AttributeValue::Null(true)),
             ("Sold".to_string(), AttributeValue::Bool(false)),
-            (
-                "GSI2PK".to_string(),
-                AttributeValue::S(format!("FEE#FITNESS")),
-            ),
-            ("GSI2SK".to_string(), vehicle_key(&self.vehicle_no)),
-            (
-                "GSI3PK".to_string(),
-                AttributeValue::S(format!("FEE#INSURANCE")),
-            ),
-            ("GSI3SK".to_string(), vehicle_key(&self.vehicle_no)),
-            (
-                "GSI4PK".to_string(),
-                AttributeValue::S(format!("FEE#ROUTE")),
-            ),
-            ("GSI4SK".to_string(), vehicle_key(&self.vehicle_no)),
-            ("GSI5PK".to_string(), AttributeValue::S(format!("FEE#TAX"))),
-            ("GSI5SK".to_string(), vehicle_key(&self.vehicle_no)),
-            ("GSI7PK".to_string(), AttributeValue::S(format!("VEHICLE"))),
+
+            ("GSI2PK".to_string(), AttributeValue::S(format!("VEHICLE"))),
         ])
     }
 }

@@ -103,7 +103,6 @@ impl DBDataAccess {
 
     async fn get_fees_info(
         &self,
-        index: &str,
         index_type: &str,
         days: u32,
     ) -> Result<Vec<Vehicle>, Error> {
@@ -111,21 +110,21 @@ impl DBDataAccess {
             .client
             .query()
             .table_name(&self.table_name)
-            .index_name(index)
+            .index_name("GSI2")
             .key_condition_expression("#feesPK = :feesPK")
-            .expression_attribute_names("#feesPK", format!("{}PK", index))
+            .expression_attribute_names("#feesPK", "GSI2PK")
             .expression_attribute_values(
                 ":feesPK",
-                AttributeValue::S(format!("FEE#{}", index_type.to_uppercase())),
+                AttributeValue::S(format!("VEHICLE")),
             )
-            .filter_expression("#time between :stime and :etime")
-            .expression_attribute_names("#time", format!("{}_date", index_type.to_lowercase()))
+            .filter_expression("#date between :sdate and :edate")
+            .expression_attribute_names("#date", format!("{}_date", index_type.to_lowercase()))
             .expression_attribute_values(
-                ":stime",
+                ":sdate",
                 AttributeValue::S(Local::now().format("%Y-%m-%d").to_string()),
             )
             .expression_attribute_values(
-                ":etime",
+                ":edate",
                 AttributeValue::S(
                     (Local::now() + Duration::days(days as i64))
                         .format("%Y-%m-%d")
@@ -335,9 +334,9 @@ impl DataAccess for DBDataAccess {
                 .client
                 .query()
                 .table_name(&self.table_name)
-                .index_name("GSI7")
+                .index_name("GSI2")
                 .key_condition_expression("#vehicle = :vehicle_key")
-                .expression_attribute_names("#vehicle", "GSI7PK")
+                .expression_attribute_names("#vehicle", "GSI2PK")
                 .expression_attribute_values(
                     ":vehicle_key",
                     AttributeValue::S("VEHICLE".to_string()),
@@ -362,19 +361,19 @@ impl DataAccess for DBDataAccess {
     ) -> Result<Vec<Vehicle>, Error> {
         if self.is_session_vaild(token).await {
             match fee_type {
-                "fitness" => self.get_fees_info("GSI2", "fitness", days).await,
-                "insurance" => self.get_fees_info("GSI3", "insurance", days).await,
-                "route" => self.get_fees_info("GSI4", "route", days).await,
-                "tax" => self.get_fees_info("GSI5", "tax", days).await,
+                "fitness" => self.get_fees_info( "fitness", days).await,
+                "insurance" => self.get_fees_info( "insurance", days).await,
+                "route" => self.get_fees_info( "route", days).await,
+                "tax" => self.get_fees_info("tax", days).await,
                 _ => {
                     let today = Local::now().format("%Y-%m-%d").to_string();
                     let vehicle_items = self
                         .client
                         .query()
                         .table_name(&self.table_name)
-                        .index_name("GSI7")
+                        .index_name("GSI2")
                         .key_condition_expression("#vehicle = :vehicle_key")
-                        .expression_attribute_names("#vehicle", "GSI7PK")
+                        .expression_attribute_names("#vehicle", "GSI2PK")
                         .expression_attribute_values(
                             ":vehicle_key",
                             AttributeValue::S("VEHICLE".to_string()),

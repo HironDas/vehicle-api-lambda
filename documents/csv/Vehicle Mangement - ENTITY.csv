@@ -1,6 +1,6 @@
-Entity,PK,SK,GSI1PK,GSI1SK,GSI2PK,GSI2SK,GSI3PK,GSI3SK,GSI4PK,GSI4SK,GSI5PK,GSI5SK,GSI6PK,GSI6SK,GSI7PK
-user,USER#<username>,USER#<username>,,,,,,,,,,,,,
-session,USER#<username>,SESSION#<sessionID>,SESSION#<sessionID>,USER#<username>,,,,,,,,,,,
-vehicle,CAR#<carNumber>,CAR#<carNumber>,,,FEE#FITNESS,CAR#<carNumber>,FEE#INSURANCE,CAR#<carNumber>,FEE#ROUTE,CAR#<carNumber>,FEE#TAX,CAR#<carNumber>,,,VEHICLE
-transaction history,CAR#<carNumber>,TRANSACTION#<date>#<type>,,,,,,,,,,,HISTORY,TRANSACTION#<date>,
-search car,SEARCH#<4_digit_of_car>,CAR#<carNumber>,,,,,,,,,,,,,
+Entity,PK,SK,LSI1PK,GSI1PK,GSI1SK,GSI3PK,GSI3SK,GSI2PK
+user,USER#<username>,USER#<username>,,,,,,
+session,USER#<username>,SESSION#<sessionID>,,SESSION#<sessionID>,USER#<username>,,,
+vehicle,CAR#<carNumber>,CAR#<carNumber>,,,,,,VEHICLE
+transaction history,CAR#<carNumber>,TRANSACTION#<date>#<type>,,,,HISTORY,TRANSACTION#<date>,
+search car,SEARCH,SEARCH#<carNumber>,SEARCH#<4_digit_of_car>,,,,,
