@@ -107,12 +107,25 @@ pub fn vehicle_search_key(id: &str) -> AttributeValue {
 
 pub fn vehicle_from_item(vehicle_itme: &HashMap<String, AttributeValue>) -> Vehicle {
     let vehicle_no = &vehicle_itme.get("SK").unwrap().as_s().unwrap()[4..];
+    let is_number = (&vehicle_no[5..6]).chars().next().unwrap().is_numeric();
     let vehicle_no = format!(
         "{}-{}-{}-{}",
         &vehicle_no[..3],
-        &vehicle_no[3..5],
-        &vehicle_no[5..7],
-        &vehicle_no[7..]
+        if is_number {
+            &vehicle_no[3..5]
+        } else {
+            &vehicle_no[3..6]
+        },
+        if is_number {
+            &vehicle_no[5..7]
+        } else {
+            &vehicle_no[6..8]
+        },
+        if is_number {
+            &vehicle_no[7..]
+        } else {
+            &vehicle_no[8..]
+        }
     );
     let owner = vehicle_itme
         .get("owner")
