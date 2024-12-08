@@ -67,7 +67,3 @@ path = "src/bin/get_insurance.rs"
 [[bin]]
 name = "route"
 path = "src/bin/get_route.rs"
-
-[[bin]]
-name = "expire"
-path = "src/bin/get_expire.rs"

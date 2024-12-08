@@ -1,4 +1,3 @@
-
 use aws_config::BehaviorVersion;
 use lambda_http::{run, service_fn, tracing, Body, Error, Request, RequestExt, Response};
 use vehicle_management_lambda::{model::vehicle::Vehicle, DBDataAccess, DataAccess};
@@ -41,7 +40,7 @@ async fn get_route_handler(
 
     let day = req
         .query_string_parameters_ref()
-        .and_then(|params| params.all("day"));
+        .and_then(|params| params.all("days"));
 
     if day.is_none() {
         return Ok(Response::builder()
@@ -55,7 +54,7 @@ async fn get_route_handler(
     data_access
         .get_vehicles_by_type(token, "route", day)
         .await
-        .and_then(|vehicles:Vec<Vehicle>| {
+        .and_then(|vehicles: Vec<Vehicle>| {
             let vehicles = serde_json::to_string(&vehicles).unwrap();
             Ok(Response::builder()
                 .status(200)
@@ -68,5 +67,4 @@ async fn get_route_handler(
                 .body(format!("{{\"message\": \"{}\"}}", err).into())
                 .unwrap())
         })
-
 }

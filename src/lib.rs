@@ -101,41 +101,50 @@ impl DBDataAccess {
         }
     }
 
-    async fn get_fees_info(
-        &self,
-        index_type: &str,
-        days: u32,
-    ) -> Result<Vec<Vehicle>, Error> {
-        let vehicle_items = self
+    async fn get_fees_info(&self, index_type: &str, days: u32) -> Result<Vec<Vehicle>, Error> {
+        let query = self
             .client
             .query()
             .table_name(&self.table_name)
             .index_name("GSI2")
             .key_condition_expression("#feesPK = :feesPK")
             .expression_attribute_names("#feesPK", "GSI2PK")
-            .expression_attribute_values(
-                ":feesPK",
-                AttributeValue::S(format!("VEHICLE")),
-            )
-            .filter_expression("#date between :sdate and :edate")
-            .expression_attribute_names("#date", format!("{}_date", index_type.to_lowercase()))
-            .expression_attribute_values(
-                ":sdate",
-                AttributeValue::S(Local::now().format("%Y-%m-%d").to_string()),
-            )
-            .expression_attribute_values(
-                ":edate",
-                AttributeValue::S(
-                    (Local::now() + Duration::days(days as i64))
-                        .format("%Y-%m-%d")
-                        .to_string(),
-                ),
-            )
-            .send()
-            .await
-            .unwrap()
-            .items
-            .unwrap();
+            .expression_attribute_values(":feesPK", AttributeValue::S(format!("VEHICLE")));
+
+        let vehicle_items = match days {
+            0 => query
+                .filter_expression("#date < :date")
+                .expression_attribute_names("#date", format!("{}_date", index_type.to_lowercase()))
+                .expression_attribute_values(
+                    ":date",
+                    AttributeValue::S(Local::now().format("%Y-%m-%d").to_string()),
+                )
+                .send()
+                .await
+                .unwrap()
+                .items
+                .unwrap(),
+            days => query
+                .filter_expression("#date between :sdate and :edate")
+                .expression_attribute_names("#date", format!("{}_date", index_type.to_lowercase()))
+                .expression_attribute_values(
+                    ":sdate",
+                    AttributeValue::S(Local::now().format("%Y-%m-%d").to_string()),
+                )
+                .expression_attribute_values(
+                    ":edate",
+                    AttributeValue::S(
+                        (Local::now() + Duration::days(days as i64))
+                            .format("%Y-%m-%d")
+                            .to_string(),
+                    ),
+                )
+                .send()
+                .await
+                .unwrap()
+                .items
+                .unwrap(),
+        };
 
         Ok(vehicle_repo(vehicle_items))
     }
@@ -361,32 +370,10 @@ impl DataAccess for DBDataAccess {
     ) -> Result<Vec<Vehicle>, Error> {
         if self.is_session_vaild(token).await {
             match fee_type {
-                "fitness" => self.get_fees_info( "fitness", days).await,
-                "insurance" => self.get_fees_info( "insurance", days).await,
-                "route" => self.get_fees_info( "route", days).await,
-                "tax" => self.get_fees_info("tax", days).await,
-                _ => {
-                    let today = Local::now().format("%Y-%m-%d").to_string();
-                    let vehicle_items = self
-                        .client
-                        .query()
-                        .table_name(&self.table_name)
-                        .index_name("GSI2")
-                        .key_condition_expression("#vehicle = :vehicle_key")
-                        .expression_attribute_names("#vehicle", "GSI2PK")
-                        .expression_attribute_values(
-                            ":vehicle_key",
-                            AttributeValue::S("VEHICLE".to_string()),
-                        )
-                        .filter_expression("fitness_date < :date or tax_data < :date or insurance_date < :date or route_date < :date")
-                        .expression_attribute_values(":date", AttributeValue::S(today))
-                        .send()
-                        .await
-                        .unwrap()
-                        .items
-                        .unwrap();
-                    Ok(vehicle_repo(vehicle_items))
-                }
+                "fitness" => self.get_fees_info("fitness", days).await,
+                "insurance" => self.get_fees_info("insurance", days).await,
+                "route" => self.get_fees_info("route", days).await,
+                _ => self.get_fees_info("tax", days).await,
             }
         } else {
             Err("You don't have access!!".into())

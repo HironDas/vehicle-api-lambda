@@ -90,7 +90,6 @@ impl Vehicle {
             ),
             ("updated_at".to_string(), AttributeValue::Null(true)),
             ("Sold".to_string(), AttributeValue::Bool(false)),
-
             ("GSI2PK".to_string(), AttributeValue::S(format!("VEHICLE"))),
         ])
     }

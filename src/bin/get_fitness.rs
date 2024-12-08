@@ -40,7 +40,7 @@ async fn get_fitness_handler(
 
     let day = req
         .query_string_parameters_ref()
-        .and_then(|params| params.all("day"));
+        .and_then(|params| params.all("days"));
 
     if day.is_none() {
         return Ok(Response::builder()
@@ -54,7 +54,7 @@ async fn get_fitness_handler(
     data_access
         .get_vehicles_by_type(token, "fitness", day)
         .await
-        .and_then(|vehicles:Vec<Vehicle>| {
+        .and_then(|vehicles: Vec<Vehicle>| {
             let vehicles = serde_json::to_string(&vehicles).unwrap();
             Ok(Response::builder()
                 .status(200)
@@ -67,5 +67,4 @@ async fn get_fitness_handler(
                 .body(format!("{{\"message\": \"{}\"}}", err).into())
                 .unwrap())
         })
-
 }
