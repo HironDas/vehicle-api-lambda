@@ -35,6 +35,14 @@ pub trait DataAccess {
     ) -> Result<Vec<Vehicle>, Error>;
 }
 
+pub struct UpdaeVehicle {
+    vehicle_id: String,
+    tax_date: Option<String>,
+    insurance_date: Option<String>,
+    route_date: Option<String>,
+    fitness_date: Option<String>,
+}
+
 pub struct DBDataAccess {
     client: Client,
     table_name: String,
@@ -175,6 +183,17 @@ impl DBDataAccess {
 
     async fn is_session_vaild(&self, token: &str) -> bool {
         self.get_user(token).await.is_some()
+    }
+
+    async fn undate_vehicle(&self, vehicle: UpdaeVehicle) -> Put {
+        let expression = format!(
+            "SET {} {} {} {}",
+            vehicle.tax_date.and_then(|date| Some("tax_date = :date")).unwrap(),
+            vehicle.tax_date.is_none(),
+            vehicle.tax_date.is_none(),
+            vehicle.tax_date.is_none()
+        );
+        todo!()
     }
 }
 
