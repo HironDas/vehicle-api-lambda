@@ -1,4 +1,4 @@
-use std::fmt::format;
+use std::{collections::HashMap, fmt::format};
 
 use async_trait::async_trait;
 use aws_sdk_dynamodb::{
@@ -36,11 +36,53 @@ pub trait DataAccess {
 }
 
 pub struct UpdaeVehicle {
-    vehicle_id: String,
-    tax_date: Option<String>,
-    insurance_date: Option<String>,
-    route_date: Option<String>,
-    fitness_date: Option<String>,
+    pub vehicle_id: String,
+    pub tax_date: Option<String>,
+    pub insurance_date: Option<String>,
+    pub route_date: Option<String>,
+    pub fitness_date: Option<String>,
+}
+
+struct UpdateVehicleIter<'a> {
+    unpdate_vehicle: &'a UpdaeVehicle,
+    index: usize,
+}
+
+impl<'a> Iterator for UpdateVehicleIter<'a> {
+    type Item = (String, Option<&'a String>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let resule = match self.index {
+            0 => Some((
+                ":tax_date".to_string(),
+                self.unpdate_vehicle.tax_date.as_ref(),
+            )),
+            1 => Some((
+                ":insurance_date".to_string(),
+                self.unpdate_vehicle.insurance_date.as_ref(),
+            )),
+            2 => Some((
+                ":fitness_date".to_string(),
+                self.unpdate_vehicle.fitness_date.as_ref(),
+            )),
+            3 => Some((
+                ":route_date".to_string(),
+                self.unpdate_vehicle.route_date.as_ref(),
+            )),
+            _ => None,
+        };
+        self.index += 1;
+        resule
+    }
+}
+
+impl UpdaeVehicle {
+    fn iter(&self) -> UpdateVehicleIter {
+        UpdateVehicleIter {
+            unpdate_vehicle: self,
+            index: 0,
+        }
+    }
 }
 
 pub struct DBDataAccess {
@@ -186,13 +228,41 @@ impl DBDataAccess {
     }
 
     async fn undate_vehicle(&self, vehicle: UpdaeVehicle) -> Put {
-        let expression = format!(
-            "SET {} {} {} {}",
-            vehicle.tax_date.and_then(|date| Some("tax_date = :date")).unwrap(),
-            vehicle.tax_date.is_none(),
-            vehicle.tax_date.is_none(),
-            vehicle.tax_date.is_none()
-        );
+
+        let expression:Vec<String> = vehicle.iter().map(|(fee, date)| {
+            if date.is_none(){
+                "".to_string()
+            }else{
+                format!("{} = {}", fee.replace(":", ""), fee)
+            }
+        }).filter(|value|{value != ""}).collect();
+
+        let expression = format!("SET {}", expression.join(", "));
+        // format!(
+        //     "SET {} {} {} {}",
+        //     vehicle
+        //         .tax_date
+        //         .clone()
+        //         .and_then(|_| Some("tax_date = :tax_date,"))
+        //         .or_else(|| Some(""))
+        //         .unwrap(),
+        //     vehicle
+        //         .insurance_date
+        //         .and_then(|_| Some("insurance_date = :insurance_date,"))
+        //         .or_else(|| Some(""))
+        //         .unwrap(),
+        //     vehicle
+        //         .route_date
+        //         .and_then(|_| Some("route_date = :route_date,"))
+        //         .or_else(|| Some(""))
+        //         .unwrap(),
+        //     vehicle
+        //         .fitness_date
+        //         .and_then(|_| Some("fitness_date = :fitness_date"))
+        //         .or_else(|| Some(""))
+        //         .unwrap(),
+        // );
+
         todo!()
     }
 }
