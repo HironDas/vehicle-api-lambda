@@ -227,41 +227,24 @@ impl DBDataAccess {
         self.get_user(token).await.is_some()
     }
 
-    async fn undate_vehicle(&self, vehicle: UpdaeVehicle) -> Put {
+    async fn undate_vehicle(&self, vehicle: UpdaeVehicle) -> Result<Put, &str> {
 
-        let expression:Vec<String> = vehicle.iter().map(|(fee, date)| {
+        let expression: String = vehicle.iter().map(|(fee, date)| {
             if date.is_none(){
                 "".to_string()
             }else{
                 format!("{} = {}", fee.replace(":", ""), fee)
             }
-        }).filter(|value|{value != ""}).collect();
+        }).filter(|value|{value != ""}).collect::<Vec<String>>().join(", ");
 
-        let expression = format!("SET {}", expression.join(", "));
-        // format!(
-        //     "SET {} {} {} {}",
-        //     vehicle
-        //         .tax_date
-        //         .clone()
-        //         .and_then(|_| Some("tax_date = :tax_date,"))
-        //         .or_else(|| Some(""))
-        //         .unwrap(),
-        //     vehicle
-        //         .insurance_date
-        //         .and_then(|_| Some("insurance_date = :insurance_date,"))
-        //         .or_else(|| Some(""))
-        //         .unwrap(),
-        //     vehicle
-        //         .route_date
-        //         .and_then(|_| Some("route_date = :route_date,"))
-        //         .or_else(|| Some(""))
-        //         .unwrap(),
-        //     vehicle
-        //         .fitness_date
-        //         .and_then(|_| Some("fitness_date = :fitness_date"))
-        //         .or_else(|| Some(""))
-        //         .unwrap(),
-        // );
+        if expression.trim().is_empty(){
+            return Err("No updated fee date is provided to update date");
+        }
+        let expression = format!("SET {}", expression);
+
+        let expression_attribute_values = vehicle.into().map(|(fee, date)|{
+            let attribute_values = HashMap::new();
+        });
 
         todo!()
     }
