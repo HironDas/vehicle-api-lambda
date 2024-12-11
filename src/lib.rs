@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::format};
 
 use async_trait::async_trait;
 use aws_sdk_dynamodb::{
-    types::{AttributeValue, Put, TransactWriteItem},
+    types::{AttributeValue, Put, TransactWriteItem, Update},
     Client,
 };
 use chrono::{Duration, Local, NaiveDate};
@@ -13,7 +13,7 @@ use lambda_http::{
 use model::{
     session::{session_key, Session},
     user::{from_item, user_key, User},
-    vehicle::{vehicle_from_item, vehicle_repo, Vehicle},
+    vehicle::{vehicle_from_item, vehicle_key, vehicle_repo, Vehicle},
 };
 use pwhash::bcrypt;
 
@@ -227,26 +227,42 @@ impl DBDataAccess {
         self.get_user(token).await.is_some()
     }
 
-    async fn undate_vehicle(&self, vehicle: UpdaeVehicle) -> Result<Put, &str> {
+    
 
-        let expression: String = vehicle.iter().map(|(fee, date)| {
-            if date.is_none(){
-                "".to_string()
-            }else{
-                format!("{} = {}", fee.replace(":", ""), fee)
-            }
-        }).filter(|value|{value != ""}).collect::<Vec<String>>().join(", ");
+    async fn undate_vehicle(&self, vehicle: UpdaeVehicle) -> Result<TransactWriteItem, &str> {
+        let expression: String = vehicle
+            .iter()
+            .map(|(fee, date)| {
+                if date.is_none() {
+                    "".to_string()
+                } else {
+                    format!("{} = {}", fee.replace(":", ""), fee)
+                }
+            })
+            .filter(|value| value != "")
+            .collect::<Vec<String>>()
+            .join(", ");
 
-        if expression.trim().is_empty(){
+        if expression.trim().is_empty() {
             return Err("No updated fee date is provided to update date");
         }
         let expression = format!("SET {}", expression);
 
-        let expression_attribute_values = vehicle.into().map(|(fee, date)|{
-            let attribute_values = HashMap::new();
-        });
+        let expression_attribute_values = vehicle
+            .iter()
+            .map(|(fee, date)| (fee, AttributeValue::S(date.unwrap().to_owned())))
+            .collect::<HashMap<String, AttributeValue>>();
 
-        todo!()
+        let update = Update::builder()
+            .table_name(&self.table_name)
+            .key("PK", vehicle_key(&vehicle.vehicle_id))
+            .key("SK", vehicle_key(&vehicle.vehicle_id))
+            .update_expression(expression)
+            .set_expression_attribute_values(Some(expression_attribute_values))
+            .build()
+            .unwrap();
+
+        Ok(TransactWriteItem::builder().update(update).build())
     }
 }
 
