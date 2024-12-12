@@ -71,8 +71,8 @@ impl Vehicle {
 
     pub fn to_item(self) -> HashMap<String, AttributeValue> {
         HashMap::from([
-            ("PK".to_string(), vehicle_key(&self.vehicle_no)),
-            ("SK".to_string(), vehicle_key(&self.vehicle_no)),
+            ("PK".to_string(), self.get_key()),
+            ("SK".to_string(), self.get_key()),
             ("owner".to_string(), AttributeValue::S(self.owner)),
             (
                 "fitness_date".to_string(),

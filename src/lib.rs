@@ -174,7 +174,7 @@ impl DBDataAccess {
                 .unwrap()
                 .items
                 .unwrap(),
-            days => query
+            _ => query
                 .filter_expression("#date between :sdate and :edate")
                 .expression_attribute_names("#date", format!("{}_date", index_type.to_lowercase()))
                 .expression_attribute_values(
@@ -226,8 +226,6 @@ impl DBDataAccess {
     async fn is_session_vaild(&self, token: &str) -> bool {
         self.get_user(token).await.is_some()
     }
-
-    
 
     async fn undate_vehicle(&self, vehicle: UpdaeVehicle) -> Result<TransactWriteItem, &str> {
         let expression: String = vehicle
