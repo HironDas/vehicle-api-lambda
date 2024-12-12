@@ -11,6 +11,7 @@ use lambda_http::{
     Error,
 };
 use model::{
+    history::TransactionHistory,
     session::{session_key, Session},
     user::{from_item, user_key, User},
     vehicle::{vehicle_from_item, vehicle_key, vehicle_repo, Vehicle},
@@ -227,7 +228,7 @@ impl DBDataAccess {
         self.get_user(token).await.is_some()
     }
 
-    async fn undate_vehicle(&self, vehicle: UpdaeVehicle) -> Result<TransactWriteItem, &str> {
+    async fn update_vehicle(&self, vehicle: UpdaeVehicle) -> Result<TransactWriteItem, &str> {
         let expression: String = vehicle
             .iter()
             .map(|(fee, date)| {
@@ -261,6 +262,16 @@ impl DBDataAccess {
             .unwrap();
 
         Ok(TransactWriteItem::builder().update(update).build())
+    }
+    async fn add_history(
+        &self,
+        transaction_history: TransactionHistory,
+    ) -> TransactWriteItem {
+        let put_transaction = Put::builder()
+            .table_name(&self.table_name)
+            .set_item(Some(transaction_history.to_item()))
+            .build().unwrap();
+        TransactWriteItem::builder().put(put_transaction).build()
     }
 }
 
