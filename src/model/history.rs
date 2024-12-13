@@ -27,7 +27,7 @@ impl TransactionHistory {
             exp_date: date,
             transaction_type,
             payer,
-            created_at: Local::now().format("%Y-%m-%d").to_string()
+            created_at: Local::now().format("%Y-%m-%d").to_string(),
         }
     }
 
@@ -52,7 +52,7 @@ impl TransactionHistory {
             (
                 "payer".to_string(),
                 AttributeValue::S(format!("{}", self.payer)),
-            ), 
+            ),
             (
                 "exp_date".to_string(),
                 AttributeValue::S(format!("{}", self.exp_date)),
@@ -110,11 +110,11 @@ pub fn history_from_item(history_item: &HashMap<String, AttributeValue>) -> Tran
             .unwrap()
             .to_string(),
         exp_date: history_item
-        .get("exp_date")
-        .unwrap()
-        .as_s()
-        .unwrap()
-        .to_string(),
+            .get("exp_date")
+            .unwrap()
+            .as_s()
+            .unwrap()
+            .to_string(),
     }
 }
 

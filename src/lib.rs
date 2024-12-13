@@ -488,32 +488,33 @@ impl DataAccess for DBDataAccess {
         update_vehicle: UpdaeVehicle,
     ) -> Result<(), Error> {
         let update_vehicle_write_item = self.update_vehicle(&update_vehicle).await?;
+        let user = self
+            .get_user(token)
+            .await
+            .ok_or("You don't have valid access!!")?;
 
-        if self.is_session_vaild(token).await {
-            let date = update_vehicle
-                .iter()
-                .find(|value| value.0 == format!("{}_date", fee_type))
-                .unwrap()
-                .1
-                .unwrap()
-                .to_string();
+        let date = update_vehicle
+            .iter()
+            .find(|value| value.0 == format!("{}_date", fee_type))
+            .unwrap()
+            .1
+            .unwrap()
+            .to_string();
 
-            let transaction_history = TransactionHistory::new(
-                update_vehicle.vehicle_no,
-                date,
-                fee_type.to_string(),
-                "hiron".to_string(),
-            );
+        let transaction_history = TransactionHistory::new(
+            update_vehicle.vehicle_no,
+            date,
+            fee_type.to_string(),
+            user.as_s().unwrap()[5..].to_string(),
+        );
 
-            let transaction_history_write_item = self.add_history(transaction_history).await;
+        let transaction_history_write_item = self.add_history(transaction_history).await;
 
-            self.client.transact_write_items()
+        self.client
+            .transact_write_items()
             .transact_items(transaction_history_write_item)
             .transact_items(update_vehicle_write_item);
 
-            Ok(())
-        } else {
-            Err("You don't have valid access!!".into())
-        }
+        Ok(())
     }
 }
