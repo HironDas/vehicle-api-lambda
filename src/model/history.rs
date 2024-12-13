@@ -44,7 +44,7 @@ impl TransactionHistory {
                 "SK".to_string(),
                 AttributeValue::S(format!(
                     "TRANSACTION#{}#{}",
-                    self.date, self.transaction_type
+                    self.transaction_type, self.date
                 )),
             ),
             (
@@ -95,8 +95,8 @@ pub fn history_from_item(history_item: &HashMap<String, AttributeValue>) -> Tran
     );
     TransactionHistory {
         vehicle_no,
-        date: sk[1].to_string(),
-        transaction_type: sk[2].to_string(),
+        date: sk[2].to_string(),
+        transaction_type: sk[1].to_string(),
         payer: history_item
             .get("payer")
             .unwrap()

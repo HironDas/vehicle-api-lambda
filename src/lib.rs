@@ -1,11 +1,11 @@
-use std::{collections::HashMap, fmt::format};
+use std::collections::HashMap;
 
 use async_trait::async_trait;
 use aws_sdk_dynamodb::{
     types::{AttributeValue, Put, TransactWriteItem, Update},
     Client,
 };
-use chrono::{Duration, Local, NaiveDate};
+use chrono::{Duration, Local};
 use lambda_http::{
     tracing::{self},
     Error,
@@ -14,7 +14,7 @@ use model::{
     history::TransactionHistory,
     session::{session_key, Session},
     user::{from_item, user_key, User},
-    vehicle::{vehicle_from_item, vehicle_key, vehicle_repo, Vehicle},
+    vehicle::{vehicle_key, vehicle_repo, Vehicle},
 };
 use pwhash::bcrypt;
 
@@ -34,6 +34,8 @@ pub trait DataAccess {
         fee_type: &str,
         days: u32,
     ) -> Result<Vec<Vehicle>, Error>;
+    async fn pay_fee(&self, token: &str, fee_type: &str, update_vehicle: UpdaeVehicle)->Result<(), Error>;
+
 }
 
 pub struct UpdaeVehicle {
@@ -263,14 +265,12 @@ impl DBDataAccess {
 
         Ok(TransactWriteItem::builder().update(update).build())
     }
-    async fn add_history(
-        &self,
-        transaction_history: TransactionHistory,
-    ) -> TransactWriteItem {
+    async fn add_history(&self, transaction_history: TransactionHistory) -> TransactWriteItem {
         let put_transaction = Put::builder()
             .table_name(&self.table_name)
             .set_item(Some(transaction_history.to_item()))
-            .build().unwrap();
+            .build()
+            .unwrap();
         TransactWriteItem::builder().put(put_transaction).build()
     }
 }
@@ -475,5 +475,9 @@ impl DataAccess for DBDataAccess {
         } else {
             Err("You don't have access!!".into())
         }
+    }
+
+    async fn pay_fee(&self, token: &str, fee_type: &str, update_vehicle: UpdaeVehicle)->Result<(), Error>{
+        todo!()
     }
 }
