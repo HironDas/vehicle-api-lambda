@@ -14,7 +14,7 @@ use model::{
     history::TransactionHistory,
     session::{session_key, Session},
     user::{from_item, user_key, User},
-    vehicle::{vehicle_key, vehicle_repo, Vehicle},
+    vehicle::{vehicle_from_item, vehicle_key, vehicle_repo, Vehicle},
 };
 use pwhash::bcrypt;
 
@@ -487,23 +487,38 @@ impl DataAccess for DBDataAccess {
         fee_type: &str,
         update_vehicle: UpdaeVehicle,
     ) -> Result<(), Error> {
-        let update_vehicle_write_item = self.update_vehicle(&update_vehicle).await?;
         let user = self
             .get_user(token)
             .await
             .ok_or("You don't have valid access!!")?;
 
-        let date = update_vehicle
-            .iter()
-            .find(|value| value.0 == format!("{}_date", fee_type))
+        let old_vhicle = self
+            .client
+            .get_item()
+            .table_name(&self.table_name)
+            .key("PK", vehicle_key(&update_vehicle.vehicle_no))
+            .key("SK", vehicle_key(&update_vehicle.vehicle_no))
+            .send()
+            .await
             .unwrap()
-            .1
-            .unwrap()
-            .to_string();
+            .item
+            .unwrap();
+
+        let update_vehicle_write_item = self.update_vehicle(&update_vehicle).await?;
+
+        // let date = update_vehicle
+        //     .iter()
+        //     .find(|value| value.0 == format!("{}_date", fee_type))
+        //     .unwrap()
+        //     .1
+        //     .unwrap()
+        //     .to_string();
+
+        let exp_date =  old_vhicle.get(&*[fee_type,"_date"].join("")).unwrap().as_s().unwrap().to_string();
 
         let transaction_history = TransactionHistory::new(
             update_vehicle.vehicle_no,
-            date,
+            exp_date,
             fee_type.to_string(),
             user.as_s().unwrap()[5..].to_string(),
         );
@@ -513,8 +528,20 @@ impl DataAccess for DBDataAccess {
         self.client
             .transact_write_items()
             .transact_items(transaction_history_write_item)
-            .transact_items(update_vehicle_write_item);
-
-        Ok(())
+            .transact_items(update_vehicle_write_item)
+            .send()
+            .await
+            .and_then(|output| {
+                tracing::info!(
+                    "Vehicle {} updated and transaction is added:  {:#?}",
+                    fee_type,
+                    output
+                );
+                Ok(())
+            })
+            .or_else(|err| {
+                tracing::error!(%err, "Error Message");
+                Err(err.into())
+            })
     }
 }
