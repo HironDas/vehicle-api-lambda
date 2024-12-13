@@ -514,7 +514,12 @@ impl DataAccess for DBDataAccess {
         //     .unwrap()
         //     .to_string();
 
-        let exp_date =  old_vhicle.get(&*[fee_type,"_date"].join("")).unwrap().as_s().unwrap().to_string();
+        let exp_date = old_vhicle
+            .get(&*[fee_type, "_date"].join(""))
+            .unwrap()
+            .as_s()
+            .unwrap()
+            .to_string();
 
         let transaction_history = TransactionHistory::new(
             update_vehicle.vehicle_no,
