@@ -34,12 +34,16 @@ pub trait DataAccess {
         fee_type: &str,
         days: u32,
     ) -> Result<Vec<Vehicle>, Error>;
-    async fn pay_fee(&self, token: &str, fee_type: &str, update_vehicle: UpdaeVehicle)->Result<(), Error>;
-
+    async fn pay_fee(
+        &self,
+        token: &str,
+        fee_type: &str,
+        update_vehicle: UpdaeVehicle,
+    ) -> Result<(), Error>;
 }
 
 pub struct UpdaeVehicle {
-    pub vehicle_id: String,
+    pub vehicle_no: String,
     pub tax_date: Option<String>,
     pub insurance_date: Option<String>,
     pub route_date: Option<String>,
@@ -230,7 +234,7 @@ impl DBDataAccess {
         self.get_user(token).await.is_some()
     }
 
-    async fn update_vehicle(&self, vehicle: UpdaeVehicle) -> Result<TransactWriteItem, &str> {
+    async fn update_vehicle(&self, vehicle: &UpdaeVehicle) -> Result<TransactWriteItem, &str> {
         let expression: String = vehicle
             .iter()
             .map(|(fee, date)| {
@@ -256,8 +260,8 @@ impl DBDataAccess {
 
         let update = Update::builder()
             .table_name(&self.table_name)
-            .key("PK", vehicle_key(&vehicle.vehicle_id))
-            .key("SK", vehicle_key(&vehicle.vehicle_id))
+            .key("PK", vehicle_key(&vehicle.vehicle_no))
+            .key("SK", vehicle_key(&vehicle.vehicle_no))
             .update_expression(expression)
             .set_expression_attribute_values(Some(expression_attribute_values))
             .build()
@@ -477,7 +481,39 @@ impl DataAccess for DBDataAccess {
         }
     }
 
-    async fn pay_fee(&self, token: &str, fee_type: &str, update_vehicle: UpdaeVehicle)->Result<(), Error>{
-        todo!()
+    async fn pay_fee(
+        &self,
+        token: &str,
+        fee_type: &str,
+        update_vehicle: UpdaeVehicle,
+    ) -> Result<(), Error> {
+        let update_vehicle_write_item = self.update_vehicle(&update_vehicle).await?;
+
+        if self.is_session_vaild(token).await {
+            let date = update_vehicle
+                .iter()
+                .find(|value| value.0 == format!("{}_date", fee_type))
+                .unwrap()
+                .1
+                .unwrap()
+                .to_string();
+
+            let transaction_history = TransactionHistory::new(
+                update_vehicle.vehicle_no,
+                date,
+                fee_type.to_string(),
+                "hiron".to_string(),
+            );
+
+            let transaction_history_write_item = self.add_history(transaction_history).await;
+
+            self.client.transact_write_items()
+            .transact_items(transaction_history_write_item)
+            .transact_items(update_vehicle_write_item);
+
+            Ok(())
+        } else {
+            Err("You don't have valid access!!".into())
+        }
     }
 }

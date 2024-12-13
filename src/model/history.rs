@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use aws_sdk_dynamodb::types::AttributeValue;
-use chrono::NaiveDate;
+use chrono::{Local, NaiveDate};
 use serde::{Deserialize, Serialize};
 
 use super::vehicle::vehicle_key;
@@ -9,7 +9,8 @@ use super::vehicle::vehicle_key;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionHistory {
     pub vehicle_no: String,
-    pub date: String,
+    pub exp_date: String,
+    pub created_at: String,
     pub transaction_type: String,
     pub payer: String,
 }
@@ -23,14 +24,15 @@ impl TransactionHistory {
         let date = date_formatter(&date).format("%Y-%m-%d").to_string();
         Self {
             vehicle_no,
-            date,
+            exp_date: date,
             transaction_type,
             payer,
+            created_at: Local::now().format("%Y-%m-%d").to_string()
         }
     }
 
     pub fn get_key(&self) -> AttributeValue {
-        history_key(&self.date)
+        history_key(&self.created_at)
     }
 
     pub fn to_json(&self) -> String {
@@ -44,12 +46,16 @@ impl TransactionHistory {
                 "SK".to_string(),
                 AttributeValue::S(format!(
                     "TRANSACTION#{}#{}",
-                    self.transaction_type, self.date
+                    self.transaction_type, self.created_at
                 )),
             ),
             (
                 "payer".to_string(),
                 AttributeValue::S(format!("{}", self.payer)),
+            ), 
+            (
+                "exp_date".to_string(),
+                AttributeValue::S(format!("{}", self.exp_date)),
             ),
             (
                 "GSI3PK".to_string(),
@@ -95,7 +101,7 @@ pub fn history_from_item(history_item: &HashMap<String, AttributeValue>) -> Tran
     );
     TransactionHistory {
         vehicle_no,
-        date: sk[2].to_string(),
+        created_at: sk[2].to_string(),
         transaction_type: sk[1].to_string(),
         payer: history_item
             .get("payer")
@@ -103,6 +109,12 @@ pub fn history_from_item(history_item: &HashMap<String, AttributeValue>) -> Tran
             .as_s()
             .unwrap()
             .to_string(),
+        exp_date: history_item
+        .get("exp_date")
+        .unwrap()
+        .as_s()
+        .unwrap()
+        .to_string(),
     }
 }
 
