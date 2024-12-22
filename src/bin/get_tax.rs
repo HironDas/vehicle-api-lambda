@@ -45,7 +45,7 @@ async fn get_tax_handler(
     if day.is_none() {
         return Ok(Response::builder()
             .status(404)
-            .body("{\"message\": \"Days is to provided\"}".into())
+            .body("{\"message\": \"Days is not provided\"}".into())
             .unwrap());
     }
 

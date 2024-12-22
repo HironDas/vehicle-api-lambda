@@ -17,6 +17,7 @@ use model::{
     vehicle::{vehicle_from_item, vehicle_key, vehicle_repo, Vehicle},
 };
 use pwhash::bcrypt;
+use serde::Deserialize;
 
 pub mod model;
 
@@ -42,6 +43,7 @@ pub trait DataAccess {
     ) -> Result<(), Error>;
 }
 
+#[derive(Debug, Deserialize, Default)]
 pub struct UpdaeVehicle {
     pub vehicle_no: String,
     pub tax_date: Option<String>,
@@ -249,13 +251,14 @@ impl DBDataAccess {
             .join(", ");
 
         if expression.trim().is_empty() {
-            return Err("No updated fee date is provided to update date");
+            return Err("No updated fee date is provided");
         }
         let expression = format!("SET {}", expression);
 
         let expression_attribute_values = vehicle
             .iter()
-            .map(|(fee, date)| (fee, AttributeValue::S(date.unwrap().to_owned())))
+            .filter(|(_fee, date)| date.is_some())
+            .map(|(fee, date)| (fee, AttributeValue::S(date.unwrap().to_string())))
             .collect::<HashMap<String, AttributeValue>>();
 
         let update = Update::builder()

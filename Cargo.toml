@@ -67,3 +67,7 @@ path = "src/bin/get_insurance.rs"
 [[bin]]
 name = "route"
 path = "src/bin/get_route.rs"
+
+[[bin]]
+name = "pay-fee"
+path = "src/bin/pay_fee.rs"
