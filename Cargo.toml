@@ -71,3 +71,7 @@ path = "src/bin/get_route.rs"
 [[bin]]
 name = "pay-fee"
 path = "src/bin/pay_fee.rs"
+
+[[bin]]
+name = "update-vehicle"
+path = "src/bin/update_vehicle.rs"

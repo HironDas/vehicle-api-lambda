@@ -5,7 +5,7 @@ use aws_sdk_dynamodb::{
     types::{AttributeValue, Put, TransactWriteItem, Update},
     Client,
 };
-use chrono::{Duration, Local};
+use chrono::{Duration, Local, NaiveDate, SecondsFormat, Utc};
 use lambda_http::{
     tracing::{self},
     Error,
@@ -39,12 +39,16 @@ pub trait DataAccess {
         &self,
         token: &str,
         fee_type: &str,
-        update_vehicle: UpdaeVehicle,
+        update_vehicle: UpdateVehicle,
     ) -> Result<(), Error>;
+    async fn update_vehicle(&self, token: &str, update_vheicle: UpdateVehicle)
+        -> Result<(), Error>;
+    async fn view_history(&self, token: &str, days: u32) -> Result<Vec<TransactionHistory>, Error>;
+    async fn undo_history(&self, token: &str) -> Result<(), Error>;
 }
 
 #[derive(Debug, Deserialize, Default)]
-pub struct UpdaeVehicle {
+pub struct UpdateVehicle {
     pub vehicle_no: String,
     pub tax_date: Option<String>,
     pub insurance_date: Option<String>,
@@ -53,7 +57,7 @@ pub struct UpdaeVehicle {
 }
 
 struct UpdateVehicleIter<'a> {
-    unpdate_vehicle: &'a UpdaeVehicle,
+    unpdate_vehicle: &'a UpdateVehicle,
     index: usize,
 }
 
@@ -85,7 +89,7 @@ impl<'a> Iterator for UpdateVehicleIter<'a> {
     }
 }
 
-impl UpdaeVehicle {
+impl UpdateVehicle {
     fn iter(&self) -> UpdateVehicleIter {
         UpdateVehicleIter {
             unpdate_vehicle: self,
@@ -102,6 +106,11 @@ pub struct DBDataAccess {
 impl DBDataAccess {
     pub fn new(client: Client, table_name: String) -> Self {
         Self { client, table_name }
+    }
+
+    fn date_formatter(&self, date: &str) -> NaiveDate {
+        let date: Vec<u32> = date.split("-").map(|d| d.parse::<u32>().unwrap()).collect();
+        NaiveDate::from_ymd_opt(date[0] as i32, date[1], date[2]).unwrap()
     }
 
     async fn create_session(&self, user: User) -> Result<Session, Error> {
@@ -236,7 +245,7 @@ impl DBDataAccess {
         self.get_user(token).await.is_some()
     }
 
-    async fn update_vehicle(&self, vehicle: &UpdaeVehicle) -> Result<TransactWriteItem, &str> {
+    async fn update_vehicle(&self, vehicle: &UpdateVehicle) -> Result<TransactWriteItem, &str> {
         let expression: String = vehicle
             .iter()
             .map(|(fee, date)| {
@@ -253,13 +262,15 @@ impl DBDataAccess {
         if expression.trim().is_empty() {
             return Err("No updated fee date is provided");
         }
-        let expression = format!("SET {}", expression);
+        let expression = format!("SET {}, updated_at = :updated_at", expression);
 
-        let expression_attribute_values = vehicle
+        let mut expression_attribute_values = vehicle
             .iter()
             .filter(|(_fee, date)| date.is_some())
-            .map(|(fee, date)| (fee, AttributeValue::S(date.unwrap().to_string())))
+            .map(|(fee, date)| (fee, AttributeValue::S(self.date_formatter(date.unwrap()).format("%Y-%m-%d").to_string())))
             .collect::<HashMap<String, AttributeValue>>();
+
+        expression_attribute_values.insert(String::from(":updated_at"), AttributeValue::S(Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true)));
 
         let update = Update::builder()
             .table_name(&self.table_name)
@@ -488,7 +499,7 @@ impl DataAccess for DBDataAccess {
         &self,
         token: &str,
         fee_type: &str,
-        update_vehicle: UpdaeVehicle,
+        update_vehicle: UpdateVehicle,
     ) -> Result<(), Error> {
         let user = self
             .get_user(token)
@@ -551,5 +562,32 @@ impl DataAccess for DBDataAccess {
                 tracing::error!(%err, "Error Message");
                 Err(err.into())
             })
+    }
+
+    async fn update_vehicle(
+        &self,
+        token: &str,
+        update_vehicle: UpdateVehicle,
+    ) -> Result<(), Error> {
+        if self.is_session_vaild(token).await {
+            self.client
+                .transact_write_items()
+                .transact_items(self.update_vehicle(&update_vehicle).await?)
+                .send()
+                .await
+                .and_then(|_output| Ok(()))
+                .or_else(|err| {
+                    tracing::error!(%err, "Error Message");
+                    Err(err.into())
+                })
+        } else {
+            Err("You don't have valid access!!".into())
+        }
+    }
+    async fn view_history(&self, token: &str, days: u32) -> Result<Vec<TransactionHistory>, Error> {
+        todo!()
+    }
+    async fn undo_history(&self, token: &str) -> Result<(), Error> {
+        todo!()
     }
 }
