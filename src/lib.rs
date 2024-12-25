@@ -11,7 +11,7 @@ use lambda_http::{
     Error,
 };
 use model::{
-    history::TransactionHistory,
+    history::{history_key, history_repo, TransactionHistory},
     session::{session_key, Session},
     user::{from_item, user_key, User},
     vehicle::{vehicle_from_item, vehicle_key, vehicle_repo, Vehicle},
@@ -267,10 +267,22 @@ impl DBDataAccess {
         let mut expression_attribute_values = vehicle
             .iter()
             .filter(|(_fee, date)| date.is_some())
-            .map(|(fee, date)| (fee, AttributeValue::S(self.date_formatter(date.unwrap()).format("%Y-%m-%d").to_string())))
+            .map(|(fee, date)| {
+                (
+                    fee,
+                    AttributeValue::S(
+                        self.date_formatter(date.unwrap())
+                            .format("%Y-%m-%d")
+                            .to_string(),
+                    ),
+                )
+            })
             .collect::<HashMap<String, AttributeValue>>();
 
-        expression_attribute_values.insert(String::from(":updated_at"), AttributeValue::S(Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true)));
+        expression_attribute_values.insert(
+            String::from(":updated_at"),
+            AttributeValue::S(Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true)),
+        );
 
         let update = Update::builder()
             .table_name(&self.table_name)
@@ -585,7 +597,42 @@ impl DataAccess for DBDataAccess {
         }
     }
     async fn view_history(&self, token: &str, days: u32) -> Result<Vec<TransactionHistory>, Error> {
-        todo!()
+        if self.is_session_vaild(token).await {
+            let historys = self
+                .client
+                .query()
+                .table_name(&self.table_name)
+                .index_name("GSI3")
+                .key_condition_expression("GSI3PK = :pk AND GSI3SK between :sdate and :edate")
+                .set_expression_attribute_values(Some(HashMap::from([
+                    (":pk".to_string(), AttributeValue::S("HISTORY".to_string())),
+                    (
+                        ":edate".to_string(),
+                        history_key(&Local::now().format("%Y-%m-%d").to_string()),
+                    ),
+                    (
+                        ":sdate".to_string(),
+                        history_key(
+                            &(Local::now() - Duration::days(days as i64))
+                                .format("%Y-%m-%d")
+                                .to_string(),
+                        ),
+                    ),
+                ])))
+                .send()
+                .await
+                .unwrap()
+                .items
+                .unwrap()
+                .into_iter()
+                .rev()
+                .collect();
+
+            Ok(history_repo(historys))
+        } else {
+            Err("Your Session is invalid!!".into())
+        }
+        // todo!()
     }
     async fn undo_history(&self, token: &str) -> Result<(), Error> {
         todo!()

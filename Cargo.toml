@@ -75,3 +75,7 @@ path = "src/bin/pay_fee.rs"
 [[bin]]
 name = "update-vehicle"
 path = "src/bin/update_vehicle.rs"
+
+[[bin]]
+name = "get-history"
+path = "src/bin/get_history.rs"

@@ -1,5 +1,7 @@
 use aws_config::BehaviorVersion;
-use lambda_http::{ext::request, run, service_fn, tracing, Body, Error, Request, RequestExt, Response};
+use lambda_http::{
+    ext::request, run, service_fn, tracing, Body, Error, Request, RequestExt, Response,
+};
 use vehicle_management_lambda::{DBDataAccess, DataAccess, UpdateVehicle};
 
 #[tokio::main]
@@ -27,13 +29,16 @@ async fn main() -> Result<(), Error> {
 }
 
 #[tracing::instrument( skip(data_access, request), fields(request_id = request.lambda_context().request_id))]
-async fn update_vehicle_handeler(data_access: &impl DataAccess, request: Request)->Result<Response<Body>, Error>{
+async fn update_vehicle_handeler(
+    data_access: &impl DataAccess,
+    request: Request,
+) -> Result<Response<Body>, Error> {
     let token = request.headers().get("Authorization");
     if token.is_none() {
         return Ok(Response::builder()
-        .status(401)
-        .body("{\"message\": \"Unauthorized\"}".into())
-        .unwrap());
+            .status(401)
+            .body("{\"message\": \"Unauthorized\"}".into())
+            .unwrap());
     }
 
     let token = token.unwrap().to_str().unwrap();
@@ -55,9 +60,7 @@ async fn update_vehicle_handeler(data_access: &impl DataAccess, request: Request
             .and_then(|_| {
                 Ok(Response::builder()
                     .status(200)
-                    .body(
-                        format!("{{\"message\": \"the car is updated\"}}").into(),
-                    )
+                    .body(format!("{{\"message\": \"the car is updated\"}}").into())
                     .unwrap())
             })
             .or_else(|err| {
@@ -72,5 +75,4 @@ async fn update_vehicle_handeler(data_access: &impl DataAccess, request: Request
             .body("{\"message\": \"the message body is empty or in wrong format!!\"}".into())
             .unwrap())
     }
-
 }
