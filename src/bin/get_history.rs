@@ -41,7 +41,19 @@ async fn get_history_handler(
     }
 
     let token = token.unwrap().to_str().unwrap();
-    let days = 30;
+
+    // let days = request
+    //     .query_string_parameters_ref()
+    //     .and_then(|params| params.all("days"))
+    //     .or_else(|| Some(vec!["30"]))
+    //     .unwrap()[0].trim().parse::<u32>().unwrap();
+
+    let days = request.query_string_parameters_ref().map_or(30, |params| {
+        params.all("days").unwrap()[0]
+            .trim()
+            .parse::<u32>()
+            .unwrap()
+    });
 
     data_access
         .view_history(token, days)

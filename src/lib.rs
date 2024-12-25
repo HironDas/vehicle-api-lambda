@@ -14,7 +14,7 @@ use model::{
     history::{history_key, history_repo, TransactionHistory},
     session::{session_key, Session},
     user::{from_item, user_key, User},
-    vehicle::{vehicle_from_item, vehicle_key, vehicle_repo, Vehicle},
+    vehicle::{vehicle_from_item, vehicle_key, vehicle_repo, vehicle_search_key, Vehicle},
 };
 use pwhash::bcrypt;
 use serde::Deserialize;
@@ -44,7 +44,7 @@ pub trait DataAccess {
     async fn update_vehicle(&self, token: &str, update_vheicle: UpdateVehicle)
         -> Result<(), Error>;
     async fn view_history(&self, token: &str, days: u32) -> Result<Vec<TransactionHistory>, Error>;
-    async fn undo_history(&self, token: &str) -> Result<(), Error>;
+    async fn undo_history(&self, token: &str, delete_history: DeleteHistory) -> Result<(), Error>;
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -96,6 +96,13 @@ impl UpdateVehicle {
             index: 0,
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DeleteHistory {
+    vehicle_id: String,
+    fee_type: String,
+    date: String,
 }
 
 pub struct DBDataAccess {
@@ -246,6 +253,11 @@ impl DBDataAccess {
     }
 
     async fn update_vehicle(&self, vehicle: &UpdateVehicle) -> Result<TransactWriteItem, &str> {
+
+        let isVehicle = self.client.get_item().table_name(&self.table_name)
+        .key("PK", AttributeValue::S("SEARCH".to_string()))
+        .key("SK", vehicle_search_key(&vehicle.vehicle_no)).send().await.unwrap().item.is_some();
+    
         let expression: String = vehicle
             .iter()
             .map(|(fee, date)| {
@@ -634,7 +646,25 @@ impl DataAccess for DBDataAccess {
         }
         // todo!()
     }
-    async fn undo_history(&self, token: &str) -> Result<(), Error> {
+    async fn undo_history(&self, token: &str, delete_history: DeleteHistory) -> Result<(), Error> {
+        if self.is_session_vaild(token).await {
+            let history = self
+                .client
+                .get_item()
+                .table_name(&self.table_name)
+                .set_key(Some(HashMap::from([
+                    ("PK".to_string(), vehicle_key(&delete_history.vehicle_id)),
+                    (
+                        "SK".to_string(),
+                        AttributeValue::S(format!(
+                            "TRANSACTION#{}#{}",
+                            delete_history.fee_type, delete_history.date
+                        )),
+                    ),
+                ]))).send().await;
+        } else {
+            return Err("Your Session is invalid!!".into());
+        }
         todo!()
     }
 }
