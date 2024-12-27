@@ -79,3 +79,7 @@ path = "src/bin/update_vehicle.rs"
 [[bin]]
 name = "get-history"
 path = "src/bin/get_history.rs"
+
+[[bin]]
+name = "undo-history"
+path = "src/bin/undo_history.rs"

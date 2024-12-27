@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use aws_sdk_dynamodb::{
-    types::{AttributeValue, Put, TransactWriteItem, Update},
+    types::{AttributeValue, Delete, Put, TransactWriteItem, Update},
     Client,
 };
 use chrono::{Duration, Local, NaiveDate, SecondsFormat, Utc};
@@ -11,10 +11,10 @@ use lambda_http::{
     Error,
 };
 use model::{
-    history::{history_key, history_repo, TransactionHistory},
+    history::{history_from_item, history_key, history_repo, TransactionHistory},
     session::{session_key, Session},
     user::{from_item, user_key, User},
-    vehicle::{vehicle_from_item, vehicle_key, vehicle_repo, vehicle_search_key, Vehicle},
+    vehicle::{vehicle_key, vehicle_repo, vehicle_search_key, Vehicle},
 };
 use pwhash::bcrypt;
 use serde::Deserialize;
@@ -100,9 +100,9 @@ impl UpdateVehicle {
 
 #[derive(Debug, Deserialize)]
 pub struct DeleteHistory {
-    vehicle_id: String,
-    fee_type: String,
-    date: String,
+    vehicle_no: String,
+    transaction_type: String,
+    created_at: String,
 }
 
 pub struct DBDataAccess {
@@ -253,11 +253,6 @@ impl DBDataAccess {
     }
 
     async fn update_vehicle(&self, vehicle: &UpdateVehicle) -> Result<TransactWriteItem, &str> {
-
-        let isVehicle = self.client.get_item().table_name(&self.table_name)
-        .key("PK", AttributeValue::S("SEARCH".to_string()))
-        .key("SK", vehicle_search_key(&vehicle.vehicle_no)).send().await.unwrap().item.is_some();
-    
         let expression: String = vehicle
             .iter()
             .map(|(fee, date)| {
@@ -276,36 +271,51 @@ impl DBDataAccess {
         }
         let expression = format!("SET {}, updated_at = :updated_at", expression);
 
-        let mut expression_attribute_values = vehicle
-            .iter()
-            .filter(|(_fee, date)| date.is_some())
-            .map(|(fee, date)| {
-                (
-                    fee,
-                    AttributeValue::S(
-                        self.date_formatter(date.unwrap())
-                            .format("%Y-%m-%d")
-                            .to_string(),
-                    ),
-                )
-            })
-            .collect::<HashMap<String, AttributeValue>>();
-
-        expression_attribute_values.insert(
-            String::from(":updated_at"),
-            AttributeValue::S(Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true)),
-        );
-
-        let update = Update::builder()
+        let search_vehicle = self
+            .client
+            .get_item()
             .table_name(&self.table_name)
-            .key("PK", vehicle_key(&vehicle.vehicle_no))
-            .key("SK", vehicle_key(&vehicle.vehicle_no))
-            .update_expression(expression)
-            .set_expression_attribute_values(Some(expression_attribute_values))
-            .build()
-            .unwrap();
+            .key("PK", AttributeValue::S("SEARCH".to_string()))
+            .key("SK", vehicle_search_key(&vehicle.vehicle_no))
+            .send()
+            .await
+            .unwrap()
+            .item;
 
-        Ok(TransactWriteItem::builder().update(update).build())
+        if let Some(_car) = search_vehicle {
+            let mut expression_attribute_values = vehicle
+                .iter()
+                .filter(|(_fee, date)| date.is_some())
+                .map(|(fee, date)| {
+                    (
+                        fee,
+                        AttributeValue::S(
+                            self.date_formatter(date.unwrap())
+                                .format("%Y-%m-%d")
+                                .to_string(),
+                        ),
+                    )
+                })
+                .collect::<HashMap<String, AttributeValue>>();
+
+            expression_attribute_values.insert(
+                String::from(":updated_at"),
+                AttributeValue::S(Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true)),
+            );
+
+            let update = Update::builder()
+                .table_name(&self.table_name)
+                .key("PK", vehicle_key(&vehicle.vehicle_no))
+                .key("SK", vehicle_key(&vehicle.vehicle_no))
+                .update_expression(expression)
+                .set_expression_attribute_values(Some(expression_attribute_values))
+                .build()
+                .unwrap();
+
+            Ok(TransactWriteItem::builder().update(update).build())
+        } else {
+            Err("The car is not in the record!!")
+        }
     }
     async fn add_history(&self, transaction_history: TransactionHistory) -> TransactWriteItem {
         let put_transaction = Put::builder()
@@ -644,27 +654,71 @@ impl DataAccess for DBDataAccess {
         } else {
             Err("Your Session is invalid!!".into())
         }
-        // todo!()
     }
     async fn undo_history(&self, token: &str, delete_history: DeleteHistory) -> Result<(), Error> {
         if self.is_session_vaild(token).await {
-            let history = self
+            let current_history = self
                 .client
                 .get_item()
                 .table_name(&self.table_name)
                 .set_key(Some(HashMap::from([
-                    ("PK".to_string(), vehicle_key(&delete_history.vehicle_id)),
+                    ("PK".to_string(), vehicle_key(&delete_history.vehicle_no)),
                     (
                         "SK".to_string(),
                         AttributeValue::S(format!(
                             "TRANSACTION#{}#{}",
-                            delete_history.fee_type, delete_history.date
+                            delete_history.transaction_type, delete_history.created_at
                         )),
                     ),
-                ]))).send().await;
+                ])))
+                .send()
+                .await
+                .unwrap()
+                .item
+                .map(|history| history_from_item(&history))
+                .ok_or_else(|| "No record is available")?;
+
+            let vehicle = format!(
+                "{{ \"vehicle_no\": \"{}\", \"{}_date\": \"{}\" }}",
+                current_history.vehicle_no, delete_history.transaction_type, delete_history.created_at
+            );
+
+            let update_vehicle = serde_json::from_str::<UpdateVehicle>(&vehicle).unwrap();
+
+            self.client
+                .transact_write_items()
+                .transact_items(self.update_vehicle(&update_vehicle).await?)
+                .transact_items(self.delete_history(delete_history).await?)
+                .send()
+                .await
+                .and_then(|_output| Ok(()))
+                .or_else(|err| {
+                    tracing::error!(%err, "Error Message");
+                    Err(err.into())
+                })
         } else {
             return Err("Your Session is invalid!!".into());
         }
-        todo!()
+    }
+}
+
+impl DBDataAccess {
+    async fn delete_history(
+        &self,
+        delete_history: DeleteHistory,
+    ) -> Result<TransactWriteItem, Error> {
+        let history_delete = Delete::builder()
+            .table_name(&self.table_name)
+            .key("PK", vehicle_key(&delete_history.vehicle_no))
+            .key(
+                "SK",
+                AttributeValue::S(format!(
+                    "TRANSACTION#{}#{}",
+                    delete_history.transaction_type, delete_history.created_at
+                )),
+            )
+            .build()?;
+
+        Ok(TransactWriteItem::builder().delete(history_delete).build())
     }
 }
