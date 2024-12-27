@@ -680,7 +680,9 @@ impl DataAccess for DBDataAccess {
 
             let vehicle = format!(
                 "{{ \"vehicle_no\": \"{}\", \"{}_date\": \"{}\" }}",
-                current_history.vehicle_no, delete_history.transaction_type, delete_history.created_at
+                current_history.vehicle_no,
+                delete_history.transaction_type,
+                delete_history.created_at
             );
 
             let update_vehicle = serde_json::from_str::<UpdateVehicle>(&vehicle).unwrap();

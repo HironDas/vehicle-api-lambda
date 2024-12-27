@@ -1,7 +1,5 @@
 use aws_config::BehaviorVersion;
-use lambda_http::{
-    ext::request, run, service_fn, tracing, Body, Error, Request, RequestExt, Response,
-};
+use lambda_http::{run, service_fn, tracing, Body, Error, Request, RequestExt, Response};
 use vehicle_management_lambda::{DBDataAccess, DataAccess};
 
 #[tokio::main]
