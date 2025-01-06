@@ -65,7 +65,7 @@ impl<'a> Iterator for UpdateVehicleIter<'a> {
     type Item = (String, Option<&'a String>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let resule = match self.index {
+        let result = match self.index {
             0 => Some((
                 ":tax_date".to_string(),
                 self.unpdate_vehicle.tax_date.as_ref(),
@@ -85,7 +85,7 @@ impl<'a> Iterator for UpdateVehicleIter<'a> {
             _ => None,
         };
         self.index += 1;
-        resule
+        result
     }
 }
 
@@ -441,7 +441,7 @@ impl DataAccess for DBDataAccess {
                     // tracing::info!("updated user: {:#?}", output.attributes);
                     Ok(())
                 })
-                .or_else(|err| Err::<(), Error>(err.into()))
+                .or_else(|err| Err(err.into()))
         } else {
             Err("Password is not valid!!!".into())
         }
