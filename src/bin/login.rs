@@ -60,6 +60,7 @@ async fn login(data_access: &impl DataAccess, req: Request) -> Result<Response<B
         .await
         .and_then(|session| {
             Ok(Response::builder()
+                .header("Content-Type", "Application/json")
                 .status(200)
                 .body(format!("{{\"token\": \"{}\"}}", session.session_id).into())
                 .unwrap())
@@ -67,6 +68,7 @@ async fn login(data_access: &impl DataAccess, req: Request) -> Result<Response<B
         .or_else(|err| {
             tracing::error!(err);
             Ok(Response::builder()
+                .header("Content-Type", "Application/json")
                 .status(400)
                 .body("{\"message\": \"Something went wrong\"}".into())
                 .unwrap())
