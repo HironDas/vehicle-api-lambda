@@ -36,6 +36,7 @@ async fn pay_fee_handeler(
     if token.is_none() {
         return Ok(Response::builder()
             .status(401)
+            .header("Content-type", "application/json")
             .body("{\"message\": \"Unauthorized\"}".into())
             .unwrap());
     }
@@ -60,7 +61,7 @@ async fn pay_fee_handeler(
             Err(err) => {
                 return Ok(Response::builder()
                     .status(400)
-                    .body(format!("{{'message':'{}'}}", err).into())
+                    .body(format!("{{\"message\":\"{}\"}}", err).into())
                     .unwrap());
             }
         };

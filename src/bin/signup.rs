@@ -30,6 +30,7 @@ async fn signup<T: DataAccess>(data_access: &T, req: Request) -> Result<Response
         Body::Empty => {
             return Ok(Response::builder()
                 .status(400)
+                .header("content-type", "application/json")
                 .body("{\"message\":\"The msg body is empty\"}".into())
                 .unwrap())
         }
@@ -38,6 +39,7 @@ async fn signup<T: DataAccess>(data_access: &T, req: Request) -> Result<Response
             Err(_) => {
                 return Ok(Response::builder()
                     .status(402)
+                    .header("Content-Type", "Application/json")
                     .body("{'message':'the body format is wrong'}".into())
                     .unwrap())
             }
@@ -45,6 +47,7 @@ async fn signup<T: DataAccess>(data_access: &T, req: Request) -> Result<Response
         Body::Binary(_) => {
             return Ok(Response::builder()
                 .status(400)
+                .header("Content-Type", "Application/json")
                 .body("{\"message\":\"The msg body is binary\"}".into())
                 .unwrap())
         }
@@ -56,12 +59,14 @@ async fn signup<T: DataAccess>(data_access: &T, req: Request) -> Result<Response
         .and_then(|_| {
             Ok(Response::builder()
                 .status(201)
-                .body("{'message':'Signup successful!!'}".into())
+                .header("Content-Type", "Application/json")
+                .body("{\"message\":\"Signup successful!!\"}".into())
                 .unwrap())
         })
         .or_else(|_err| {
             Ok(Response::builder()
                 .status(400)
+                .header("Content-Type", "Application/json")
                 .body(format!("{{\"message\": \"Username already exist!!\" }}").into())
                 .unwrap())
         })

@@ -47,7 +47,7 @@ async fn add_vehicle_handeler(
             Err(_) => {
                 return Ok(Response::builder()
                     .status(400)
-                    .body("{'message':'the body msg format is wrong'}".into())
+                    .body("{\"message\":\"the body msg format is wrong\"}".into())
                     .unwrap())
             }
         };

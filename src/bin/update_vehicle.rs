@@ -47,7 +47,7 @@ async fn update_vehicle_handeler(
             Err(err) => {
                 return Ok(Response::builder()
                     .status(400)
-                    .body(format!("{{'message':'{}'}}", err).into())
+                    .body(format!("{{\"message\":\"{}\"}}", err).into())
                     .unwrap());
             }
         };

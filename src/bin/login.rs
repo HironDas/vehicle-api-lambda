@@ -32,14 +32,16 @@ async fn login(data_access: &impl DataAccess, req: Request) -> Result<Response<B
     let user = match req.body() {
         Body::Binary(_) => {
             return Ok(Response::builder()
+                .header("Content-Type", "Application/json")
                 .status(400)
-                .body("{'message': 'Wrong JSON formate!!'}".into())
+                .body("{\"message\": \"Wrong JSON formate!!\"}".into())
                 .unwrap());
         }
         Body::Empty => {
             return Ok(Response::builder()
                 .status(400)
-                .body("{message: 'body is empty'}".into())
+                .header("Content-Type", "Application/json")
+                .body("{\"message\": \"body is empty\"}".into())
                 .unwrap());
         }
         Body::Text(text) => match serde_json::from_str::<User>(text.as_str()) {
@@ -47,7 +49,8 @@ async fn login(data_access: &impl DataAccess, req: Request) -> Result<Response<B
             Err(_) => {
                 return Ok(Response::builder()
                     .status(400)
-                    .body("{message: 'Wrong JSON formate!!'}".into())
+                    .header("Content-Type", "Application/json")
+                    .body("{\"message\": \"Wrong JSON formate!!\"}".into())
                     .unwrap())
             }
         },

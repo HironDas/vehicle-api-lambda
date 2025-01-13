@@ -53,7 +53,7 @@ async fn undo_history_handler(
                 .and_then(|_| {
                     Ok(Response::builder()
                         .status(200)
-                        .body("{'message': 'The transaction undo successfully!!'}".into())
+                        .body("{\"message\": \"The transaction undo successfully!!\"}".into())
                         .unwrap())
                 })
                 .or_else(|err| {
@@ -65,7 +65,7 @@ async fn undo_history_handler(
         } else {
             return Ok(Response::builder()
                 .status(404)
-                .body("{'message':'the body msg format is wrong'}".into())
+                .body("{\"message\":\"the body msg format is wrong\"}".into())
                 .unwrap());
         }
     } else {

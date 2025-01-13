@@ -47,8 +47,8 @@ async fn change_pass_handeler(
             Ok(user) => user,
             Err(_) => {
                 return Ok(Response::builder()
-                    .status(402)
-                    .body("{'message':'the body format is wrong'}".into())
+                    .status(403)
+                    .body("{\"message\":\"the body format is wrong\"}".into())
                     .unwrap())
             }
         },
