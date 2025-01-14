@@ -479,7 +479,7 @@ impl DataAccess for DBDataAccess {
                 })
                 .or_else(|err| {
                     tracing::error!(%err, "Error Message");
-                    Err(err.into())
+                    Err("Vehicle already exists".into())
                 })
         } else {
             Err("You don't have access!!".into())
